@@ -1,0 +1,75 @@
+{
+  "name": "hookflare",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-03-14",
+
+  // D1 Database
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "hookflare-db",
+      "database_id": "local",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  // Cloudflare Queues
+  "queues": {
+    "producers": [
+      {
+        "binding": "WEBHOOK_QUEUE",
+        "queue": "hookflare-webhooks"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "hookflare-webhooks",
+        "max_batch_size": 10,
+        "max_retries": 3,
+        "dead_letter_queue": "hookflare-webhooks-dlq"
+      }
+    ]
+  },
+
+  // KV Namespace for idempotency
+  "kv_namespaces": [
+    {
+      "binding": "IDEMPOTENCY_KV",
+      "id": "local"
+    }
+  ],
+
+  // R2 Bucket for payload archive
+  "r2_buckets": [
+    {
+      "binding": "PAYLOAD_BUCKET",
+      "bucket_name": "hookflare-payloads"
+    }
+  ],
+
+  // Durable Objects
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "DELIVERY_DO",
+        "class_name": "DeliveryManager"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_classes": ["DeliveryManager"]
+    }
+  ],
+
+  // Environment variables (defaults)
+  "vars": {
+    "RETRY_MAX_ATTEMPTS": "5",
+    "RETRY_BACKOFF_BASE_MS": "30000",
+    "RETRY_BACKOFF_MAX_MS": "86400000",
+    "IDEMPOTENCY_TTL_S": "86400",
+    "PAYLOAD_ARCHIVE_DAYS": "30",
+    "DELIVERY_TIMEOUT_MS": "30000"
+  }
+}
