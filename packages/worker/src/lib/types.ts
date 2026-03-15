@@ -9,6 +9,7 @@ export type {
 // Worker-specific: Cloudflare bindings
 export interface Env {
   DB: D1Database;
+  API_TOKEN?: string; // Simple mode: single env var token
   WEBHOOK_QUEUE: Queue<QueueMessage>;
   IDEMPOTENCY_KV: KVNamespace;
   PAYLOAD_BUCKET: R2Bucket;

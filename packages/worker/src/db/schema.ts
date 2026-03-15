@@ -58,6 +58,20 @@ export const events = sqliteTable("events", {
   received_at: timestamp(),
 });
 
+// --- API Keys ---
+
+export const apiKeys = sqliteTable("api_keys", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  key_hash: text("key_hash").notNull().unique(),
+  key_prefix: text("key_prefix").notNull(),
+  scopes: text("scopes").notNull().default('["admin"]'),
+  last_used_at: text("last_used_at"),
+  expires_at: text("expires_at"),
+  revoked_at: text("revoked_at"),
+  created_at: timestamp(),
+});
+
 // --- Deliveries ---
 
 export const deliveries = sqliteTable("deliveries", {
