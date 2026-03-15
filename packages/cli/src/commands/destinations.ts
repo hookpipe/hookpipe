@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { HookflareClient } from "../client.js";
 import { output, outputTable, outputSuccess } from "../output.js";
+import { parseJsonData } from "../input.js";
 
 export const destinationsCommand = new Command("destinations")
   .alias("dest")
@@ -10,19 +11,26 @@ destinationsCommand
   .command("list")
   .alias("ls")
   .description("List all destinations")
-  .action(async () => {
+  .option("--fields <fields>", "Comma-separated fields to include in output")
+  .action(async (opts) => {
     const client = new HookflareClient();
     const res = await client.listDestinations();
     const dests = res.data as Record<string, unknown>[];
-    outputTable(
-      dests.map((d) => ({
-        id: d.id,
-        name: d.name,
-        url: d.url,
-        max_retries: d.max_retries,
-        created_at: d.created_at,
-      })),
-    );
+
+    if (opts.fields) {
+      const fields = opts.fields.split(",").map((f: string) => f.trim());
+      outputTable(dests.map((d) => Object.fromEntries(fields.map((f: string) => [f, d[f]]))));
+    } else {
+      outputTable(
+        dests.map((d) => ({
+          id: d.id,
+          name: d.name,
+          url: d.url,
+          max_retries: d.max_retries,
+          created_at: d.created_at,
+        })),
+      );
+    }
   });
 
 destinationsCommand
@@ -38,20 +46,37 @@ destinationsCommand
 destinationsCommand
   .command("create")
   .description("Create a new destination")
-  .requiredOption("--name <name>", "Destination name")
-  .requiredOption("--url <url>", "Target URL")
+  .option("--name <name>", "Destination name")
+  .option("--url <url>", "Target URL")
   .option("--max-retries <n>", "Maximum retry attempts", "5")
   .option("--timeout-ms <n>", "Request timeout in ms", "30000")
+  .option("-d, --data <json>", "Raw JSON payload (agent-friendly, overrides flags)")
+  .option("--dry-run", "Validate input without creating the resource")
+  .addHelpText("after", `
+Examples:
+  $ hookflare dest create --name my-app --url https://api.example.com/hooks
+  $ hookflare dest create -d '{"name":"my-app","url":"https://api.example.com/hooks","retry_policy":{"max_retries":3}}'
+  $ hookflare dest create -d '{"name":"test","url":"https://test.com"}' --dry-run`)
   .action(async (opts) => {
-    const client = new HookflareClient();
-    const res = await client.createDestination({
+    const body = parseJsonData(opts.data) ?? {
       name: opts.name,
       url: opts.url,
       retry_policy: {
         max_retries: parseInt(opts.maxRetries, 10),
         timeout_ms: parseInt(opts.timeoutMs, 10),
       },
-    });
+    };
+
+    if (!body.name) throw new Error("name is required");
+    if (!body.url) throw new Error("url is required");
+
+    if (opts.dryRun) {
+      output({ dry_run: true, would_create: body });
+      return;
+    }
+
+    const client = new HookflareClient();
+    const res = await client.createDestination(body as Parameters<HookflareClient["createDestination"]>[0]);
     output(res.data);
     outputSuccess("Destination created");
   });
@@ -61,7 +86,12 @@ destinationsCommand
   .alias("rm")
   .description("Delete a destination")
   .argument("<id>", "Destination ID")
-  .action(async (id: string) => {
+  .option("--dry-run", "Show what would be deleted without deleting")
+  .action(async (id: string, opts) => {
+    if (opts.dryRun) {
+      output({ dry_run: true, would_delete: { type: "destination", id } });
+      return;
+    }
     const client = new HookflareClient();
     await client.deleteDestination(id);
     outputSuccess(`Destination ${id} deleted`);
