@@ -18,7 +18,7 @@ import { ApiError } from "../lib/errors";
  * 7. Return 202 Accepted
  */
 export async function handleWebhookIngress(c: Context<{ Bindings: Env }>) {
-  const sourceId = c.req.param("source_id");
+  const sourceId = c.req.param("source_id")!;
   const env = c.env;
 
   // 1. Look up source
