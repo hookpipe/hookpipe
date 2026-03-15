@@ -9,6 +9,7 @@ import { destinationsApi } from "./api/destinations";
 import { subscriptionsApi } from "./api/subscriptions";
 import { eventsApi } from "./api/events";
 import { keysApi } from "./api/keys";
+import { transferApi } from "./api/transfer";
 
 export { DeliveryManager } from "./delivery/manager";
 
@@ -36,8 +37,9 @@ app.route("/api/v1/destinations", destinationsApi);
 app.route("/api/v1/subscriptions", subscriptionsApi);
 app.route("/api/v1/events", eventsApi);
 app.route("/api/v1/keys", keysApi);
+app.route("/api/v1", transferApi);
 
-// --- Export ---
+// --- Worker export ---
 export default {
   fetch: app.fetch,
 
