@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { env } from "cloudflare:test";
 import { SELF } from "cloudflare:test";
-import { migrateDb, request } from "./helpers";
+import { migrateDb, request, bootstrap } from "./helpers";
 import type { DeliveryTask } from "../src/lib/types";
 
 /**
@@ -14,6 +14,7 @@ import type { DeliveryTask } from "../src/lib/types";
 
 beforeEach(async () => {
   await migrateDb();
+  await bootstrap();
 });
 
 async function createPipeline(destUrl = "https://httpbin.org/post") {

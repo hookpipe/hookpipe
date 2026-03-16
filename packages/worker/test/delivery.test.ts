@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { env, SELF } from "cloudflare:test";
-import { migrateDb, request } from "./helpers";
+import { migrateDb, request, bootstrap } from "./helpers";
 import { calculateRetryDelay, shouldRetryStatus } from "../src/delivery/retry";
 import type { RetryConfig } from "../src/delivery/retry";
 import { handleQueueBatch } from "../src/queue/consumer";
@@ -11,6 +11,7 @@ import type { QueueMessage } from "../src/lib/types";
 
 beforeEach(async () => {
   await migrateDb();
+  await bootstrap();
 });
 
 describe("Retry delay calculation", () => {

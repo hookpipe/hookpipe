@@ -1,4 +1,5 @@
 import { env } from "cloudflare:test";
+import { SELF } from "cloudflare:test";
 
 const TABLES = [
   `CREATE TABLE IF NOT EXISTS sources (id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE, verification_type TEXT, verification_secret TEXT, created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')), updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')))`,
@@ -9,11 +10,67 @@ const TABLES = [
   `CREATE TABLE IF NOT EXISTS api_keys (id TEXT PRIMARY KEY, name TEXT NOT NULL, key_hash TEXT NOT NULL UNIQUE, key_prefix TEXT NOT NULL, scopes TEXT NOT NULL DEFAULT '["admin"]', last_used_at TEXT, expires_at TEXT, revoked_at TEXT, created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')))`,
 ];
 
+// Stores the test API key after bootstrap
+let testApiKey: string | null = null;
+
 export async function migrateDb() {
   await env.DB.batch(TABLES.map((sql) => env.DB.prepare(sql)));
+  testApiKey = null; // Reset on each test
 }
 
+/**
+ * Bootstrap the instance and return the admin API key.
+ * Caches the key for the current test.
+ */
+export async function bootstrap(): Promise<string> {
+  if (testApiKey) return testApiKey;
+
+  const res = await SELF.fetch(
+    new Request("http://localhost/api/v1/bootstrap", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "test-admin" }),
+    }),
+  );
+  const body = await res.json<{ data: { key: string } }>();
+  testApiKey = body.data.key;
+  return testApiKey;
+}
+
+/**
+ * Make a request to the worker under test.
+ * Automatically includes auth header if a key has been bootstrapped.
+ */
 export function request(
+  path: string,
+  opts?: {
+    method?: string;
+    body?: unknown;
+    headers?: Record<string, string>;
+  },
+) {
+  const { method = "GET", body, headers = {} } = opts ?? {};
+
+  // Auto-inject auth if bootstrapped and not already provided
+  const finalHeaders: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...headers,
+  };
+  if (testApiKey && !finalHeaders["Authorization"]) {
+    finalHeaders["Authorization"] = `Bearer ${testApiKey}`;
+  }
+
+  return new Request(`http://localhost${path}`, {
+    method,
+    headers: finalHeaders,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+}
+
+/**
+ * Make an unauthenticated request (no auto-injected auth).
+ */
+export function unauthRequest(
   path: string,
   opts?: {
     method?: string;

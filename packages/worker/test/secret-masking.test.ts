@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { SELF } from "cloudflare:test";
-import { migrateDb, request } from "./helpers";
+import { migrateDb, request, bootstrap } from "./helpers";
 import { maskSecret } from "../src/lib/mask";
 import type { ExportData } from "@hookflare/shared";
 
 beforeEach(async () => {
   await migrateDb();
+  await bootstrap();
 });
 
 describe("maskSecret utility", () => {

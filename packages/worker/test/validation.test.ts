@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { SELF } from "cloudflare:test";
-import { migrateDb, request } from "./helpers";
+import { migrateDb, request, bootstrap } from "./helpers";
 
 beforeEach(async () => {
   await migrateDb();
+  await bootstrap();
 });
 
 describe("Source validation", () => {

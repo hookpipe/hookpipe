@@ -1,18 +1,18 @@
 import type { Context, Next } from "hono";
 import type { Env } from "../lib/types";
 import { createDb } from "../db/queries";
-import { verifyApiKey } from "./keys";
+import { verifyApiKey, listApiKeys } from "./keys";
 
 /**
  * Auth middleware for the management API.
  *
- * Supports two modes:
- * 1. Simple mode: single API_TOKEN env var (zero-config)
- * 2. Advanced mode: API keys stored in D1 (multi-key, scopes, revocation)
+ * Priority order:
+ * 1. API_TOKEN env var (simple mode) — always checked first
+ * 2. D1 API keys (advanced mode) — checked if no env var
+ * 3. Bootstrap mode — if no env var and no keys, returns SETUP_REQUIRED
  *
- * If API_TOKEN env var is set, it takes precedence (simple mode).
- * Otherwise, falls back to D1 key lookup (advanced mode).
- * If neither is configured, all requests are allowed (first-run setup).
+ * Bootstrap mode does NOT allow access. The only unauthenticated endpoint
+ * in bootstrap mode is POST /api/v1/bootstrap (handled separately).
  */
 export function authMiddleware() {
   return async (c: Context<{ Bindings: Env }>, next: Next) => {
@@ -28,20 +28,17 @@ export function authMiddleware() {
       return;
     }
 
-    // Advanced mode: D1 key lookup
+    // No token provided — check if setup is needed
     if (!token) {
-      // Check if any keys exist — if not, allow access (first-run bootstrap)
       const db = createDb(c.env.DB);
-      const { listApiKeys } = await import("./keys");
       const keys = await listApiKeys(db);
       if (keys.length === 0) {
-        // No keys configured yet — allow access for bootstrap
-        await next();
-        return;
+        return setupRequired(c);
       }
       return unauthorized(c);
     }
 
+    // Advanced mode: D1 key lookup
     const db = createDb(c.env.DB);
     const apiKey = await verifyApiKey(db, token);
     if (!apiKey) {
@@ -62,6 +59,19 @@ function extractToken(c: Context): string | null {
 function unauthorized(c: Context) {
   return c.json(
     { error: { message: "Unauthorized", code: "UNAUTHORIZED" } },
+    401,
+  );
+}
+
+function setupRequired(c: Context) {
+  const baseUrl = new URL(c.req.url).origin;
+  return c.json(
+    {
+      error: {
+        message: `No API key configured. Create your first key: POST ${baseUrl}/api/v1/bootstrap`,
+        code: "SETUP_REQUIRED",
+      },
+    },
     401,
   );
 }
