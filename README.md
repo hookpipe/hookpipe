@@ -1,6 +1,6 @@
 # hookflare
 
-Open-source webhook infrastructure built on Cloudflare Workers. Receive, verify, queue, and reliably deliver webhooks at the edge — with zero servers to manage.
+**Never miss a webhook.** Free, open-source, deploys to Cloudflare in 30 seconds.
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/hookedge/hookflare)
 
