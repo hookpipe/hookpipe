@@ -28,5 +28,11 @@ jobs:
       - name: Typecheck
         run: pnpm --filter @hookflare/worker typecheck && pnpm --filter hookflare typecheck
 
-      - name: Test
-        run: pnpm --filter @hookflare/worker test
+      - name: Test with coverage
+        run: pnpm --filter @hookflare/worker test -- --coverage
+
+      - name: Build CLI
+        run: pnpm --filter hookflare build
+
+      - name: Verify CLI runs
+        run: node packages/cli/dist/index.js --version
