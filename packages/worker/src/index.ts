@@ -17,6 +17,7 @@ import { createDb } from "./db/queries";
 import { listApiKeys } from "./auth/keys";
 
 export { DeliveryManager } from "./delivery/manager";
+export { RateLimiter } from "./lib/rate-limiter-do";
 
 const app = new Hono<{ Bindings: Env }>();
 

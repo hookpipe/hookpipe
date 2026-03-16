@@ -15,6 +15,7 @@ export interface Env {
   IDEMPOTENCY_KV: KVNamespace;
   PAYLOAD_BUCKET: R2Bucket;
   DELIVERY_DO: DurableObjectNamespace;
+  RATE_LIMITER_DO: DurableObjectNamespace;
   RETRY_MAX_ATTEMPTS: string;
   RETRY_BACKOFF_BASE_MS: string;
   RETRY_BACKOFF_MAX_MS: string;

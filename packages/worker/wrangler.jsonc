@@ -8,7 +8,7 @@
     {
       "binding": "DB",
       "database_name": "hookflare-db",
-      "database_id": "local",
+      "database_id": "71d99e84-0e61-4a1b-a7be-fe44d0895cdd",
       "migrations_dir": "migrations"
     }
   ],
@@ -35,7 +35,7 @@
   "kv_namespaces": [
     {
       "binding": "IDEMPOTENCY_KV",
-      "id": "local"
+      "id": "255464e947de437aa475784b26c90692"
     }
   ],
 
@@ -53,6 +53,10 @@
       {
         "name": "DELIVERY_DO",
         "class_name": "DeliveryManager"
+      },
+      {
+        "name": "RATE_LIMITER_DO",
+        "class_name": "RateLimiter"
       }
     ]
   },
@@ -60,6 +64,10 @@
     {
       "tag": "v1",
       "new_classes": ["DeliveryManager"]
+    },
+    {
+      "tag": "v2",
+      "new_classes": ["RateLimiter"]
     }
   ],
 
