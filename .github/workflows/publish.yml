@@ -3,10 +3,9 @@ name: Publish to npm
 on:
   push:
     tags:
-      - 'v*'  # Trigger on version tags like v0.1.0
+      - 'v*'
 
 jobs:
-  # Run tests first
   check:
     name: Typecheck & Test
     runs-on: ubuntu-latest
@@ -25,14 +24,13 @@ jobs:
       - name: Test
         run: pnpm --filter @hookflare/worker test
 
-  # Publish CLI package with provenance
   publish-cli:
     name: Publish hookflare CLI
     needs: check
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write  # Required for npm provenance (OIDC)
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -42,6 +40,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
 
       - run: pnpm install --frozen-lockfile
 
@@ -51,8 +50,16 @@ jobs:
       - name: Build CLI
         run: pnpm --filter hookflare build
 
-      - name: Publish with provenance
+      - name: Get npm OIDC token
+        id: npm-token
         run: |
-          npm config set registry https://registry.npmjs.org/
-          npm publish --provenance --access public
+          OIDC_TOKEN=$(curl -sLS "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https://registry.npmjs.org" -H "User-Agent: actions/oidc-client" -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" | jq -r '.value')
+          NPM_TOKEN=$(curl -sLS 'https://registry.npmjs.org/-/npm/v1/security/oidc/token' -H "Content-Type: application/json" -d "{\"token\":\"$OIDC_TOKEN\"}" | jq -r '.token')
+          echo "::add-mask::$NPM_TOKEN"
+          echo "NPM_TOKEN=$NPM_TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Publish with provenance
+        run: npm publish --provenance --access public
         working-directory: packages/cli
+        env:
+          NODE_AUTH_TOKEN: ${{ steps.npm-token.outputs.NPM_TOKEN }}
