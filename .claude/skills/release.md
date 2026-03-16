@@ -1,6 +1,6 @@
 ---
 name: release
-description: Publish a new version of hookflare CLI to npm via trusted publisher
+description: Publish a new version of hookflare CLI to npm via trusted publisher and update Homebrew formula
 disable-model-invocation: true
 allowed-tools: Bash, Read, Edit, Grep, Glob
 ---
@@ -41,6 +41,7 @@ Follow these steps exactly:
    ```
 
 6. **Push to trigger trusted publisher**
+   Do NOT proceed without explicit user confirmation.
    ```bash
    git push && git push --tags
    ```
@@ -52,9 +53,33 @@ Follow these steps exactly:
    ```
    Report the workflow URL so the user can watch it.
 
-8. **Verify publish** (after workflow completes)
+8. **Wait for npm publish, then verify**
    ```bash
+   sleep 90
    npm view hookflare version
    ```
+   Confirm version matches $ARGUMENTS.
 
-Do NOT proceed to step 6 without explicit user confirmation.
+9. **Update Homebrew formula**
+   Get the new tarball SHA256 and update the formula:
+   ```bash
+   SHA256=$(curl -sL "https://registry.npmjs.org/hookflare/-/hookflare-$ARGUMENTS.tgz" | shasum -a 256 | cut -d' ' -f1)
+   ```
+   Edit `~/Projects/hookedge/homebrew-hookflare/Formula/hookflare.rb`:
+   - Update `url` to `https://registry.npmjs.org/hookflare/-/hookflare-$ARGUMENTS.tgz`
+   - Update `sha256` to the value computed above
+
+10. **Commit and push Homebrew formula**
+    ```bash
+    cd ~/Projects/hookedge/homebrew-hookflare
+    git add Formula/hookflare.rb
+    git commit -m "hookflare $ARGUMENTS"
+    git push
+    ```
+
+11. **Verify Homebrew**
+    ```bash
+    brew update
+    brew info hookedge/hookflare/hookflare
+    ```
+    Confirm version matches $ARGUMENTS.
