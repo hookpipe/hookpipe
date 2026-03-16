@@ -32,6 +32,20 @@ Webhooks are deceptively simple — until they aren't. Providers send them once 
 
 Providers are pre-built knowledge modules that handle signature verification, event type catalogs, and payload schemas for each webhook sender. Think of them like Terraform providers — pluggable, typed, community-extensible.
 
+Each provider declares **capabilities** — what it knows and can do:
+
+| Capability | What it does | Status |
+|---|---|---|
+| `verify` | Validate webhook signatures | Built-in |
+| `events` | Typed event catalog with descriptions | Built-in |
+| `parse` | Extract event type and ID from payload | Built-in |
+| `challenge` | Handle URL verification (Slack, Discord) | Built-in |
+| `mock` | Generate fake events for development | Planned |
+| `schema` | Zod payload schemas for type-safe handlers | Planned |
+| `normalize` | Unify payload format across providers | Planned |
+
+Every capability is optional. The minimum provider is three fields and one file. See [`packages/providers/DESIGN.md`](packages/providers/DESIGN.md) for the full spec.
+
 | Provider | Events | Verification |
 |---|---|---|
 | **Stripe** | `payment_intent.*`, `customer.*`, `invoice.*`, `charge.*` | `stripe-signature` (HMAC-SHA256 + timestamp) |
