@@ -85,6 +85,8 @@ Next: Add this URL to your Stripe Dashboard → Developers → Webhooks.
 
 Omit `--events` to forward all events. hookflare forwards the original payload as-is to your destination with these headers added: `X-Hookflare-Event-Id`, `X-Hookflare-Delivery-Id`, `X-Hookflare-Attempt`.
 
+If delivery fails, hookflare retries automatically with exponential backoff (up to 10 attempts over ~8 hours). Events that exhaust all retries are moved to a dead letter queue for manual replay. You can configure retry strategy (exponential/linear/fixed), max attempts, and which HTTP status codes trigger retries — per destination.
+
 ## What You Can Do
 
 - **Connect providers** — Stripe, GitHub, Slack, Shopify, Vercel with one command
@@ -142,7 +144,6 @@ Key flags: `--json` (structured output), `--dry-run` (safe validation), `-d/--da
 
 - [GitHub](https://github.com/hookedge/hookflare) — source code, architecture, benchmarks
 - [Agent Guide](https://github.com/hookedge/hookflare/blob/main/packages/cli/AGENTS.md) — rules, workflows, ID formats
-- [Benchmarks](https://github.com/hookedge/hookflare/blob/main/BENCHMARKS.md) — P50 303ms, 0% error rate
 
 ## License
 

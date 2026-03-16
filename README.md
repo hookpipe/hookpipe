@@ -422,7 +422,7 @@ pnpm --filter hookflare build             # Build CLI
 
 ### Tests
 
-104 integration tests across 9 test files, running on the actual Cloudflare Workers runtime via `vitest-pool-workers`:
+123 tests across 10 test files, running on the actual Cloudflare Workers runtime via `vitest-pool-workers`:
 
 - **Ingress**: signature verification (Stripe `t=,v1=`, GitHub HMAC, Shopify Base64), idempotency dedup, event type parsing
 - **Delivery**: retry strategies (exponential/linear/fixed), status code filtering, circuit breaker state transitions
