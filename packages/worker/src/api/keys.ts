@@ -1,10 +1,11 @@
 import { Hono } from "hono";
 import type { Env } from "../lib/types";
-import { badRequest, notFound } from "../lib/errors";
+import { notFound } from "../lib/errors";
 import { createDb } from "../db/queries";
 import { createApiKeyRecord, listApiKeys, revokeApiKey } from "../auth/keys";
 import { apiKeys } from "../db/schema";
 import { eq } from "drizzle-orm";
+import { parseBody, createKeySchema } from "../lib/validation";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -14,13 +15,7 @@ app.get("/", async (c) => {
 });
 
 app.post("/", async (c) => {
-  const body = await c.req.json<{
-    name: string;
-    scopes?: string[];
-    expires_at?: string;
-  }>();
-
-  if (!body.name) throw badRequest("name is required");
+  const body = await parseBody(c, createKeySchema);
 
   const result = await createApiKeyRecord(createDb(c.env.DB), {
     name: body.name,

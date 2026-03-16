@@ -1,8 +1,9 @@
 import { Hono } from "hono";
 import type { Env } from "../lib/types";
 import { generateId } from "../lib/id";
-import { badRequest, notFound } from "../lib/errors";
+import { notFound } from "../lib/errors";
 import { createDb } from "../db/queries";
+import { parseBody, createSubscriptionSchema } from "../lib/validation";
 import * as db from "../db/queries";
 
 const app = new Hono<{ Bindings: Env }>();
@@ -13,31 +14,24 @@ app.get("/", async (c) => {
 });
 
 app.post("/", async (c) => {
-  const body = await c.req.json<{
-    source_id: string;
-    destination_id: string;
-    event_types?: string[];
-  }>();
+  const d = createDb(c.env.DB);
+  const body = await parseBody(c, createSubscriptionSchema);
 
-  if (!body.source_id) throw badRequest("source_id is required");
-  if (!body.destination_id) throw badRequest("destination_id is required");
-
-  // Verify source and destination exist
-  const source = await db.getSource(createDb(c.env.DB), body.source_id);
+  const source = await db.getSource(d, body.source_id);
   if (!source) throw notFound("Source not found");
 
-  const dest = await db.getDestination(createDb(c.env.DB), body.destination_id);
+  const dest = await db.getDestination(d, body.destination_id);
   if (!dest) throw notFound("Destination not found");
 
   const id = generateId("sub");
-  await db.createSubscription(createDb(c.env.DB), {
+  await db.createSubscription(d, {
     id,
     source_id: body.source_id,
     destination_id: body.destination_id,
-    event_types: JSON.stringify(body.event_types ?? ["*"]),
+    event_types: JSON.stringify(body.event_types),
   });
 
-  const sub = await db.getSubscription(createDb(c.env.DB), id);
+  const sub = await db.getSubscription(d, id);
   return c.json({ data: sub }, 201);
 });
 

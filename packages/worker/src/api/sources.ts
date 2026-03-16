@@ -1,14 +1,14 @@
 import { Hono } from "hono";
 import type { Env } from "../lib/types";
 import { generateId } from "../lib/id";
-import { badRequest, notFound } from "../lib/errors";
+import { notFound } from "../lib/errors";
 import { createDb } from "../db/queries";
 import { maskSourceSecret } from "../lib/mask";
+import { parseBody, createSourceSchema, updateSourceSchema } from "../lib/validation";
 import * as db from "../db/queries";
 
 const app = new Hono<{ Bindings: Env }>();
 
-// GET responses always mask the verification_secret
 app.get("/", async (c) => {
   const sources = await db.listSources(createDb(c.env.DB));
   return c.json({ data: sources.map(maskSourceSecret) });
@@ -20,15 +20,9 @@ app.get("/:id", async (c) => {
   return c.json({ data: maskSourceSecret(source) });
 });
 
-// POST returns the full secret (only time it's visible)
 app.post("/", async (c) => {
   const d = createDb(c.env.DB);
-  const body = await c.req.json<{
-    name: string;
-    verification?: { type: string; secret: string };
-  }>();
-
-  if (!body.name) throw badRequest("name is required");
+  const body = await parseBody(c, createSourceSchema);
 
   const id = generateId("src");
   await db.createSource(d, {
@@ -38,22 +32,17 @@ app.post("/", async (c) => {
     verification_secret: body.verification?.secret ?? null,
   });
 
-  // Return full secret on creation — this is the only time it's shown
   const source = await db.getSource(d, id);
   return c.json({ data: source }, 201);
 });
 
-// PUT returns masked secret
 app.put("/:id", async (c) => {
   const d = createDb(c.env.DB);
   const id = c.req.param("id");
   const existing = await db.getSource(d, id);
   if (!existing) throw notFound("Source not found");
 
-  const body = await c.req.json<{
-    name?: string;
-    verification?: { type: string; secret: string } | null;
-  }>();
+  const body = await parseBody(c, updateSourceSchema);
 
   await db.updateSource(d, id, {
     name: body.name,

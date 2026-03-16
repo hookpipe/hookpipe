@@ -1,8 +1,9 @@
 import { Hono } from "hono";
 import type { Env } from "../lib/types";
 import { generateId } from "../lib/id";
-import { badRequest, notFound } from "../lib/errors";
+import { notFound } from "../lib/errors";
 import { createDb } from "../db/queries";
+import { parseBody, createDestinationSchema, updateDestinationSchema } from "../lib/validation";
 import * as db from "../db/queries";
 
 const app = new Hono<{ Bindings: Env }>();
@@ -19,21 +20,7 @@ app.get("/:id", async (c) => {
 });
 
 app.post("/", async (c) => {
-  const body = await c.req.json<{
-    name: string;
-    url: string;
-    retry_policy?: {
-      strategy?: "exponential" | "linear" | "fixed";
-      max_retries?: number;
-      interval_ms?: number;
-      max_interval_ms?: number;
-      timeout_ms?: number;
-      on_status?: string[];
-    };
-  }>();
-
-  if (!body.name) throw badRequest("name is required");
-  if (!body.url) throw badRequest("url is required");
+  const body = await parseBody(c, createDestinationSchema);
 
   const rp = body.retry_policy;
   const id = generateId("dst");
@@ -59,18 +46,7 @@ app.put("/:id", async (c) => {
   const existing = await db.getDestination(d, id);
   if (!existing) throw notFound("Destination not found");
 
-  const body = await c.req.json<{
-    name?: string;
-    url?: string;
-    retry_policy?: {
-      strategy?: "exponential" | "linear" | "fixed";
-      max_retries?: number;
-      interval_ms?: number;
-      max_interval_ms?: number;
-      timeout_ms?: number;
-      on_status?: string[];
-    };
-  }>();
+  const body = await parseBody(c, updateDestinationSchema);
 
   const rp = body.retry_policy;
   await db.updateDestination(d, id, {

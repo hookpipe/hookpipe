@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { Env, QueueMessage } from "./lib/types";
 import { ApiError } from "./lib/errors";
+import { ValidationError } from "./lib/validation";
 import { authMiddleware } from "./auth/middleware";
 import { rateLimitMiddleware } from "./lib/rate-limit";
 import { handleWebhookIngress } from "./ingress/handler";
@@ -20,6 +21,15 @@ const app = new Hono<{ Bindings: Env }>();
 app.onError((err, c) => {
   if (err instanceof ApiError) {
     return c.json(err.toJSON(), err.statusCode as 400);
+  }
+  if (err instanceof ValidationError) {
+    return c.json({
+      error: {
+        message: err.message,
+        code: "VALIDATION_ERROR",
+        ...(err.issues ? { details: err.issues } : {}),
+      },
+    }, 400);
   }
   console.error("Unhandled error:", err);
   return c.json({ error: { message: "Internal server error", code: "INTERNAL_ERROR" } }, 500);

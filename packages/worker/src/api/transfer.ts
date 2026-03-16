@@ -1,10 +1,11 @@
 import { Hono } from "hono";
+import { z } from "zod";
 import type { Env } from "../lib/types";
 import type { ExportData, ImportResult } from "@hookflare/shared";
 import { createDb } from "../db/queries";
 import * as db from "../db/queries";
 import { generateId } from "../lib/id";
-import { badRequest } from "../lib/errors";
+import { parseBody, importDataSchema } from "../lib/validation";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -37,10 +38,7 @@ app.get("/export", async (c) => {
  * Import configuration. Skips resources that already exist (by name).
  */
 app.post("/import", async (c) => {
-  const body = await c.req.json<{ data: ExportData }>();
-
-  if (!body.data) throw badRequest("data is required");
-  if (body.data.version !== "1") throw badRequest(`Unsupported export version: ${body.data.version}`);
+  const body = await parseBody(c, z.object({ data: importDataSchema }));
 
   const d = createDb(c.env.DB);
 
