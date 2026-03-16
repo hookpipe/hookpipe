@@ -225,13 +225,62 @@ hookflare migrate --from http://old:8787 --from-key hf_sk_old --to http://new:87
 
 ## Error Handling
 
-All errors return structured JSON when `--json` is used:
+### Error response schema
+
+API errors (when using `--json`):
+
+```json
+{
+  "error": {
+    "message": "Human-readable description",
+    "code": "MACHINE_READABLE_CODE",
+    "details": []
+  }
+}
+```
+
+CLI errors (stderr):
 
 ```json
 {"success": false, "error": "error message"}
 ```
 
-Non-zero exit codes indicate failure.
+### Exit codes
+
+| Exit code | Meaning |
+|---|---|
+| `0` | Success |
+| `1` | Error (API error, network failure, invalid input) |
+
+### Error codes
+
+| HTTP | Code | Meaning | Agent action |
+|---|---|---|---|
+| 400 | `BAD_REQUEST` | Invalid request | Fix input, do not retry |
+| 400 | `VALIDATION_ERROR` | Zod schema validation failed (`.details` has field-level errors) | Fix the specific field in `.details` |
+| 401 | `UNAUTHORIZED` | Invalid or missing API key | Check token in config |
+| 401 | `SETUP_REQUIRED` | No auth configured — call `POST /api/v1/bootstrap` or `hookflare init` | Run `hookflare init` |
+| 403 | `BOOTSTRAP_COMPLETED` | Bootstrap already done — instance has an admin key | Use existing key or set `API_TOKEN` env var |
+| 403 | `BOOTSTRAP_UNNECESSARY` | `API_TOKEN` env var is set — bootstrap not needed | Use the env var token |
+| 404 | `NOT_FOUND` | Resource does not exist | Check the ID |
+| 404 | `SOURCE_NOT_FOUND` | Webhook source ID invalid (on ingress endpoint) | Verify source exists |
+| 409 | `BOOTSTRAP_CONFLICT` | Race condition during bootstrap | Use `API_TOKEN` env var to recover |
+| 413 | `PAYLOAD_TOO_LARGE` | Webhook body exceeds 256KB | Reduce payload size |
+| 429 | `RATE_LIMITED` | Per-source rate limit exceeded | Wait for `Retry-After` header value |
+| 500 | `INTERNAL_ERROR` | Unexpected server error | Retry once, then report |
+
+### Idempotency guarantees
+
+| Command | Safe to retry? | Behavior on repeat |
+|---|---|---|
+| `hookflare init` | ✅ Yes | No-op if already bootstrapped |
+| `hookflare connect <provider>` | ⚠️ Partial | Creates duplicate if source name differs; skips if same name exists |
+| `hookflare sources create` | ❌ No | Creates duplicate (unique name constraint may reject) |
+| `hookflare dest create` | ❌ No | Creates duplicate (unique name constraint may reject) |
+| `hookflare subs create` | ❌ No | Unique(source_id, destination_id) constraint may reject |
+| `hookflare events replay` | ✅ Yes | Re-enqueues the event; delivery is deduplicated by destination |
+| `hookflare export` | ✅ Yes | Read-only |
+| `hookflare import` | ✅ Yes | Skips existing resources by name |
 
 ## Resource ID Format
 
