@@ -88,6 +88,22 @@ app.put("/:id", async (c) => {
   return c.json({ data: dest });
 });
 
+// --- Circuit breaker status ---
+
+app.get("/:id/circuit", async (c) => {
+  const d = createDb(c.env.DB);
+  const id = c.req.param("id");
+  const existing = await db.getDestination(d, id);
+  if (!existing) throw notFound("Destination not found");
+
+  const doId = c.env.DELIVERY_DO.idFromName(id);
+  const doStub = c.env.DELIVERY_DO.get(doId);
+  const res = await doStub.fetch("https://do/circuit");
+  const circuit = await res.json();
+
+  return c.json({ data: circuit });
+});
+
 // --- DLQ operations ---
 
 app.get("/:id/failed", async (c) => {

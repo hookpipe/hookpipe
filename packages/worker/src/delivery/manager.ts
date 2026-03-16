@@ -30,6 +30,14 @@ export class DeliveryManager implements DurableObject {
       return new Response("OK", { status: 200 });
     }
 
+    if (url.pathname === "/circuit" && request.method === "GET") {
+      const state = await this.circuitBreaker.getState();
+      const recoveryMs = await this.circuitBreaker.getRecoveryDelayMs();
+      return new Response(JSON.stringify({ ...state, recovery_ms_remaining: recoveryMs }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     return new Response("Not found", { status: 404 });
   }
 
