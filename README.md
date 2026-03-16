@@ -23,7 +23,7 @@ Webhooks are deceptively simple — until they aren't. Providers send them once 
 - **Idempotency** — Built-in deduplication so duplicate deliveries don't cause duplicate side effects.
 - **Circuit breaker** — Auto-pauses delivery to unhealthy destinations, probes for recovery.
 - **Zero infrastructure** — No Docker, PostgreSQL, or Redis. Runs entirely on Cloudflare Workers.
-- **Free to start** — Runs on Cloudflare's free tier (~50K events/day). No credit card, no VM costs, $0 idle.
+- **Free to start** — Runs on Cloudflare's free tier (~50K events/day). No VM costs, $0 idle.
 
 ## Status
 
@@ -173,7 +173,7 @@ hookflare provides **at-least-once delivery**. Each stage of the pipeline is pro
 
 ## Limits & Cost
 
-hookflare runs entirely on Cloudflare's free tier. No credit card required.
+hookflare runs on Cloudflare's free tier. Some services (R2, Queues) may require a Cloudflare account with billing enabled.
 
 **Free tier capacity: ~50,000 events/day** (bottleneck: D1 writes).
 
@@ -424,7 +424,7 @@ hookflare focuses on **receiving and reliably forwarding** webhooks. It is not a
 ### Why hookflare?
 
 - **Zero infrastructure** — No Docker, PostgreSQL, or Redis. Runs entirely on Cloudflare Workers.
-- **Free to start** — Runs on Cloudflare's free tier (~50K events/day). No credit card required.
+- **Free to start** — Runs on Cloudflare's free tier (~50K events/day). No VM costs, $0 idle.
 - **Deploy in 30 seconds** — One-click Cloudflare deploy button provisions everything automatically.
 - **Agent-optimized** — CLI with `--json`, `--dry-run`, schema introspection. AI agents can operate hookflare without reading docs.
 - **Apache 2.0** — No restrictions on commercial use or self-hosting.
