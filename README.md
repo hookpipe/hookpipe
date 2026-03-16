@@ -43,9 +43,10 @@ Webhooks are deceptively simple — until they aren't. Providers send them once 
 | Payload archive (R2) | ✅ Stable | Configurable retention |
 | Rate limiting (per-source ingress) | ✅ Stable | KV-based with `X-RateLimit` headers |
 | `hookflare dev` (local tunnel + signature verification) | ✅ Stable | Cloudflare Quick Tunnel, auto-downloads cloudflared |
-| `hookflare connect` (one-shot setup) | 🚧 In progress | Source + destination + subscription in one command |
-| `hookflare providers` (provider catalog) | 🚧 In progress | Browse providers and event types |
-| Pre-built providers (Stripe, GitHub, Slack, Shopify, Vercel) | 🚧 In progress | Event catalogs + payload schemas |
+| `hookflare connect` (one-shot setup) | ✅ Stable | Source + destination + subscription in one command |
+| `hookflare providers` (provider catalog) | ✅ Stable | Browse providers and event types |
+| Pre-built providers (Stripe, GitHub, Slack, Shopify, Vercel) | ✅ Stable | Event catalogs, verification, presets |
+| `defineProvider()` (community providers) | ✅ Stable | One file, three fields, publish to npm or GitHub |
 | Dashboard (static SPA) | 📋 Planned | Cloudflare Pages, connects to any instance |
 | DLQ notifications (webhook/email) | 📋 Planned | Alert when deliveries fail permanently |
 | Structured logging | 📋 Planned | JSON logs for observability |
@@ -91,37 +92,30 @@ Paste the Webhook URL into your Stripe Dashboard. hookflare verifies signatures 
 ### Send Your First Webhook
 
 ```bash
-# Install the CLI
 npm i -g hookflare
 
-# Configure connection to your hookflare instance
 hookflare config set api_url http://localhost:8787
 
-# Create a source with Stripe signature verification
-hookflare sources create --json -d '{
-  "name": "stripe",
-  "verification": {"type": "stripe", "secret": "whsec_your_secret"}
-}'
-
-# Create a destination (your API)
-hookflare dest create --json -d '{
-  "name": "my-app",
-  "url": "https://myapp.com/webhooks",
-  "retry_policy": {"strategy": "exponential", "max_retries": 10}
-}'
-
-# Connect them — forward all events
-hookflare subs create --json -d '{
-  "source_id": "src_xxx",
-  "destination_id": "dst_yyy",
-  "event_types": ["*"]
-}'
-
-# Point Stripe's webhook URL to:
-#   https://your-hookflare.workers.dev/webhooks/src_xxx
+hookflare connect stripe \
+  --secret whsec_your_stripe_webhook_secret \
+  --to https://myapp.com/webhooks \
+  --events "payment_intent.*"
 ```
 
-> **Coming soon:** `hookflare connect stripe --secret whsec_xxx --to https://myapp.com/hooks` will do all of the above in one command. See [Roadmap](#roadmap).
+```
+✓ Connected stripe → https://myapp.com/webhooks
+
+  Source:       src_abc123 (stripe)
+  Destination:  dst_def456 (myapp-com)
+  Events:       payment_intent.*
+  Webhook URL:  http://localhost:8787/webhooks/src_abc123
+
+  Next steps:
+    Add the webhook URL as an endpoint in Stripe Dashboard → Developers → Webhooks
+    Dashboard: https://dashboard.stripe.com/webhooks
+```
+
+One command creates source, destination, and subscription. Paste the Webhook URL into your provider's dashboard.
 
 ## Architecture
 
@@ -252,15 +246,32 @@ hookflare dev --port 3000                                         # Any webhook,
 
 Uses [Cloudflare Quick Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) — no account needed, no port forwarding, no IP exposure.
 
+### One-Shot Connect
+
+```bash
+hookflare connect stripe --secret whsec_xxx --to https://api.example.com/hooks --events "payment_intent.*"
+hookflare connect github --secret ghsec_xxx --to https://api.example.com/hooks --events "push,pull_request"
+hookflare connect stripe --secret whsec_stg --to https://staging.example.com/hooks --name stripe-staging
+```
+
+### Provider Catalog
+
+```bash
+hookflare providers ls                      # list all providers
+hookflare providers describe stripe --json  # events, presets, verification
+```
+
 ### Agent-Friendly Features
 
 The CLI is designed as an **agent-first** interface — AI agents can operate hookflare without reading documentation:
 
 | Feature | Flag/Command | Purpose |
 |---|---|---|
+| One-shot setup | `hookflare connect` | Source + destination + subscription in one command |
+| Provider catalog | `hookflare providers ls/describe` | Browse events and verification at runtime |
 | Structured output | `--json` | Machine-parseable JSON on all commands |
 | Raw JSON input | `-d / --data` | Send full API payload, skip flag mapping |
-| Schema introspection | `hookflare schema` | Discover API resources and fields at runtime |
+| Schema introspection | `hookflare schema` | Discover API resources and fields |
 | Dry run | `--dry-run` | Validate mutations without executing |
 | Field selection | `--fields` | Limit output columns, save context tokens |
 | Export/Import | `hookflare export/import` | Pipe-friendly config transfer |
@@ -268,9 +279,9 @@ The CLI is designed as an **agent-first** interface — AI agents can operate ho
 
 ```bash
 # Agent workflow: discover → validate → execute
-hookflare schema sources                                                    # discover fields
-hookflare sources create --json --dry-run -d '{"name":"stripe"}'            # validate
-hookflare sources create --json -d '{"name":"stripe","verification":{...}}' # execute
+hookflare providers describe stripe --json                                       # discover events
+hookflare connect stripe --secret whsec_xxx --to https://... --dry-run           # validate
+hookflare connect stripe --secret whsec_xxx --to https://... --events "payment_intent.*"  # execute
 ```
 
 See [`packages/cli/AGENTS.md`](packages/cli/AGENTS.md) for the full agent guide.
@@ -344,12 +355,12 @@ See [`packages/cli/AGENTS.md`](packages/cli/AGENTS.md) for the full agent guide.
 
 Webhook ingestion, queue-based delivery, configurable retry strategies, circuit breaker, API key auth, export/import/migrate, agent-optimized CLI.
 
-### v0.2 — Provider System (current)
+### v0.2 — Provider System ✅
 
 - `hookflare connect` one-shot command
 - `hookflare providers ls/describe` catalog
-- Built-in Stripe, GitHub, Slack providers with event type catalogs and payload schemas
-- Community-extensible via `defineProvider()`
+- Built-in Stripe, GitHub, Slack, Shopify, Vercel providers with event type catalogs
+- Community-extensible via `defineProvider()` — one file, three fields, publish to npm or GitHub
 
 ### v0.3 — Observability
 

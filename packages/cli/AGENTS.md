@@ -133,7 +133,7 @@ hookflare connect stripe --secret whsec_xxx --to https://api.example.com/hooks -
 
 ```bash
 # Step 1: Create Stripe source
-hookflare sources create --json -d '{"name":"stripe","provider":"stripe","verification":{"secret":"whsec_xxx"}}'
+hookflare sources create --json -d '{"name":"stripe","provider":"stripe","verification":{"type":"stripe","secret":"whsec_xxx"}}'
 # → src_abc123
 
 # Step 2: Create two destinations
