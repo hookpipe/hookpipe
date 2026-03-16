@@ -4,13 +4,11 @@ This file contains instructions for AI agents operating the hookflare CLI.
 
 ## First Steps
 
-1. Discover available resources: `hookflare schema`
-2. Inspect a specific resource: `hookflare schema sources`
+1. Discover available providers: `hookflare providers ls`
+2. Inspect a provider's events: `hookflare providers describe stripe --json`
 3. Check connectivity: `hookflare health --json`
 
 ## Authentication
-
-Before any API call, configure the connection:
 
 ```bash
 hookflare config set api_url http://localhost:8787
@@ -20,91 +18,143 @@ hookflare config set token hf_sk_your_api_key
 ## Rules
 
 - Always use `--json` flag for machine-readable output
-- Always use `--dry-run` before mutations (create, delete) to validate first
-- Always use `--data` (raw JSON) for create commands instead of individual flags
-- Always use `--fields` on list commands to limit output to needed columns
-- Always run `hookflare schema <resource>` to discover fields before creating resources
+- Always use `--dry-run` before mutations to validate first
+- Always use `hookflare providers describe <name>` to discover events before connecting
+- Always use `hookflare connect` for simple setups (one source → one destination)
+- Use individual commands (`sources create`, `dest create`, `subs create`) for fan-out or advanced config
 - Never delete resources without confirming with the user first
-- Never pass secrets in resource names or IDs
-
-## Key Agent-Friendly Features
-
-| Feature | Flag/Command | Purpose |
-|---|---|---|
-| Structured output | `--json` | Machine-parseable JSON on all commands |
-| Raw JSON input | `-d / --data` | Send full API payload, skip flag mapping |
-| Schema introspection | `hookflare schema` | Discover API resources and fields at runtime |
-| Dry run | `--dry-run` | Validate mutations without executing |
-| Field selection | `--fields` | Limit output columns, save context tokens |
-| Export/Import | `hookflare export/import` | Pipe-friendly config transfer |
 
 ## Key Facts
 
 - hookflare runs on Cloudflare Workers — zero servers, $0 idle cost
+- Built-in providers: Stripe, GitHub, Slack, Shopify, Vercel
 - Retry strategies: `exponential` (default), `linear`, `fixed` — configurable per destination
 - Destinations can respond with `Retry-After` header to control retry timing
 - Circuit breaker opens after 10 consecutive failures, auto-probes for recovery
-- Rate limit: 100 requests per 60 seconds per source on ingress (configurable)
+- Rate limit: 100 requests per 60 seconds per source on ingress
 - Payloads archived in R2 for 30 days (configurable)
-- Apache 2.0 license — fully open source
+- Apache 2.0 license
+
+## CLI Reference
+
+### One-shot setup
+
+```bash
+hookflare connect <provider> --secret <s> --to <url> [--events <filter>] [--name <n>] [--json] [--dry-run]
+```
+
+Creates source + destination + subscription in one command. Output includes the webhook URL to register with the provider.
+
+### Provider discovery
+
+```bash
+hookflare providers ls [--json]
+hookflare providers describe <name> [--json]
+```
+
+### Individual resources (advanced)
+
+```bash
+hookflare sources create -d '{...}' [--json] [--dry-run]
+hookflare sources ls [--json] [--fields <f>]
+hookflare dest create -d '{...}' [--json] [--dry-run]
+hookflare dest ls [--json] [--fields <f>]
+hookflare subs create -d '{...}' [--json] [--dry-run]
+hookflare subs ls [--json]
+```
+
+### Events and delivery
+
+```bash
+hookflare events ls [--json] [--source <id>] [--limit <n>]
+hookflare events get <id> [--json]
+hookflare events replay <id>
+```
+
+### System
+
+```bash
+hookflare health [--json]
+hookflare schema <resource>
+hookflare export [-o <file>]
+hookflare import [-f <file>]
+hookflare migrate --from <url> --to <url>
+```
 
 ## Common Workflows
 
-### Create a Stripe webhook pipeline
+### Connect Stripe in one command
 
 ```bash
-# 1. Create source with Stripe-native signature verification
-hookflare sources create --json -d '{"name":"stripe","verification":{"type":"stripe","secret":"whsec_..."}}'
-# Output: {"data":{"id":"src_abc123","name":"stripe","verification_type":"stripe",...}}
+hookflare connect stripe --secret whsec_xxx --to https://api.example.com/hooks --events "payment_intent.*" --json
+# Output includes:
+# - source.id (src_abc123)
+# - source.webhook_url (https://your-hookflare.workers.dev/webhooks/src_abc123)
+# - destination.id (dst_def456)
+# - subscription.id (sub_ghi789)
+# - next_steps.instruction ("Add the webhook_url in your Stripe Dashboard")
+```
 
-# 2. Create destination
-hookflare dest create --json -d '{"name":"my-api","url":"https://api.example.com/hooks","retry_policy":{"strategy":"exponential","max_retries":10}}'
-# Output: {"data":{"id":"dst_def456","name":"my-api","url":"https://api.example.com/hooks",...}}
+### Fan-out: Stripe → API + Slack
 
-# 3. Create subscription (use IDs from steps 1 and 2)
-hookflare subs create --json -d '{"source_id":"src_abc123","destination_id":"dst_def456","event_types":["payment_intent.*"]}'
+```bash
+# Step 1: Create Stripe source
+hookflare sources create --json -d '{"name":"stripe","provider":"stripe","verification":{"secret":"whsec_xxx"}}'
+# → src_abc123
+
+# Step 2: Create two destinations
+hookflare dest create --json -d '{"name":"my-api","url":"https://api.example.com/hooks"}'
+# → dst_api
+hookflare dest create --json -d '{"name":"slack-alerts","url":"https://hooks.slack.com/services/xxx"}'
+# → dst_slack
+
+# Step 3: Create two subscriptions
+hookflare subs create --json -d '{"source_id":"src_abc123","destination_id":"dst_api","event_types":["*"]}'
+hookflare subs create --json -d '{"source_id":"src_abc123","destination_id":"dst_slack","event_types":["payment_intent.payment_failed"]}'
+```
+
+### Multiple environments (same provider, different secrets)
+
+```bash
+hookflare connect stripe --secret whsec_prod --to https://api.myapp.com/hooks --name stripe-prod
+hookflare connect stripe --secret whsec_stg --to https://staging.myapp.com/hooks --name stripe-staging
 ```
 
 ### Monitor delivery health
 
 ```bash
-# Check destination circuit breaker state
+# Circuit breaker state
 curl -H "Authorization: Bearer $TOKEN" https://your-hookflare/api/v1/destinations/dst_xxx/circuit
-# Returns: {"state":"closed","failureCount":0,...} or {"state":"open","failureCount":12,...}
 
-# List failed deliveries (DLQ)
+# Failed deliveries (DLQ)
 curl -H "Authorization: Bearer $TOKEN" https://your-hookflare/api/v1/destinations/dst_xxx/failed
-# Returns: {"data":[...],"total":5}
 
-# Batch replay all failed deliveries
+# Batch replay all failed
 curl -X POST -H "Authorization: Bearer $TOKEN" https://your-hookflare/api/v1/destinations/dst_xxx/replay-failed
 ```
 
 ### Troubleshooting
 
 ```bash
-# 1. Webhook not arriving? Check if source exists
-hookflare sources ls --json --fields id,name
+# 1. Check sources exist
+hookflare sources ls --json --fields id,name,provider
 
-# 2. Event received but not delivered? Check subscriptions
+# 2. Check subscriptions
 hookflare subs ls --json
 
-# 3. Event delivered but failing? Check delivery log
+# 3. Check recent events
 hookflare events ls --json --limit 5
-# Then for a specific event:
-curl -H "Authorization: Bearer $TOKEN" https://your-hookflare/api/v1/events/evt_xxx/deliveries
 
-# 4. All deliveries failing? Check circuit breaker
+# 4. Check circuit breaker (if deliveries stopped)
 curl -H "Authorization: Bearer $TOKEN" https://your-hookflare/api/v1/destinations/dst_xxx/circuit
 
-# 5. Too many requests? Check rate limit headers
-# Ingress is limited to 100 req/60s per source. Look for HTTP 429 responses.
+# 5. Rate limited? Look for HTTP 429 on ingress
 ```
 
 ### Backup and restore
 
 ```bash
-hookflare export --json -o backup.json
+hookflare export -o backup.json
 hookflare import -f backup.json
 ```
 
@@ -122,12 +172,7 @@ All errors return structured JSON when `--json` is used:
 {"success": false, "error": "error message"}
 ```
 
-HTTP 429 from ingress endpoint:
-```json
-{"error":{"message":"Rate limit exceeded: 100 requests per 60s","code":"RATE_LIMITED"}}
-```
-
-Non-zero exit codes indicate failure. Parse stderr for error details.
+Non-zero exit codes indicate failure.
 
 ## Resource ID Format
 
@@ -142,6 +187,10 @@ Non-zero exit codes indicate failure. Parse stderr for error details.
 
 | Type | Header | Provider |
 |---|---|---|
-| `stripe` | `stripe-signature` | Stripe (t=timestamp,v1=signature format) |
-| `hmac-sha256` | `x-hub-signature-256` | GitHub, generic |
-| `hmac-sha1` | `x-hub-signature` | Legacy providers |
+| `stripe` | `stripe-signature` | Stripe (t=timestamp,v1=signature) |
+| `github` | `x-hub-signature-256` | GitHub |
+| `slack` | `x-slack-signature` | Slack (v0:timestamp:body) |
+| `shopify` | `x-shopify-hmac-sha256` | Shopify (Base64) |
+| `vercel` | `x-vercel-signature` | Vercel |
+| `hmac-sha256` | configurable | Generic HMAC-SHA256 |
+| `hmac-sha1` | configurable | Legacy providers |

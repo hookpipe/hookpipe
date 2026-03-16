@@ -4,16 +4,79 @@
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/hookedge/hookflare)
 
+## Quick Start
+
+```bash
+npm i -g hookflare
+
+hookflare connect stripe \
+  --secret whsec_your_stripe_webhook_secret \
+  --to https://myapp.com/webhooks \
+  --events "payment_intent.*"
+```
+
+That's it. One command creates a source, destination, and subscription. hookflare returns a webhook URL — paste it into your Stripe Dashboard.
+
 ## Why hookflare?
 
 Webhooks are deceptively simple — until they aren't. Providers send them once and move on. If your server is down, slow, or returns an error, that event is gone. hookflare sits between webhook sources and your application to make sure **nothing gets lost**.
 
 - **Never miss a webhook** — Incoming payloads are immediately queued at the edge before your backend even processes them.
 - **Reliable delivery** — Automatic retries with exponential backoff, configurable per destination.
+- **Built-in providers** — Stripe, GitHub, Slack, Shopify, Vercel — signature verification, event catalogs, and payload schemas out of the box.
 - **Idempotency** — Built-in deduplication so duplicate deliveries don't cause duplicate side effects.
-- **Signature verification** — Native Stripe, GitHub, and generic HMAC-SHA256 verification built-in.
 - **Delivery logs** — Full audit trail of every attempt, status code, and latency.
 - **One-click deploy** — Click the button above. Cloudflare provisions everything automatically.
+
+## Providers
+
+Providers are pre-built knowledge modules that handle signature verification, event type catalogs, and payload schemas for each webhook sender. Think of them like Terraform providers — pluggable, typed, community-extensible.
+
+| Provider | Events | Verification |
+|---|---|---|
+| **Stripe** | `payment_intent.*`, `customer.*`, `invoice.*`, `charge.*` | `stripe-signature` (HMAC-SHA256 + timestamp) |
+| **GitHub** | `push`, `pull_request`, `issues`, `release`, ... | `x-hub-signature-256` (HMAC-SHA256) |
+| **Slack** | `message`, `app_mention`, `url_verification`, ... | `x-slack-signature` (HMAC-SHA256 + timestamp) |
+| **Shopify** | `orders/*`, `products/*`, `customers/*`, ... | `x-shopify-hmac-sha256` (Base64 HMAC-SHA256) |
+| **Vercel** | `deployment.*`, `domain.*`, ... | `x-vercel-signature` (HMAC-SHA1) |
+
+```bash
+# Discover available providers
+hookflare providers ls
+
+# Inspect a provider's events and schemas
+hookflare providers describe stripe --json
+```
+
+### Custom Providers
+
+Need a provider that isn't built-in? Use generic HMAC verification:
+
+```bash
+hookflare connect my-service \
+  --verification hmac-sha256 \
+  --secret my_signing_secret \
+  --to https://myapp.com/hooks
+```
+
+Or build a provider with `defineProvider()` and publish it to npm:
+
+```typescript
+import { defineProvider } from 'hookflare/provider';
+
+export default defineProvider({
+  id: 'linear',
+  name: 'Linear',
+  verification: { header: 'linear-signature', algorithm: 'hmac-sha256' },
+  events: {
+    'Issue.create': 'New issue created',
+    'Issue.update': 'Issue updated',
+    'Comment.create': 'New comment added',
+  },
+});
+```
+
+Community providers follow the `hookflare-provider-*` naming convention on npm.
 
 ## Architecture
 
@@ -58,7 +121,7 @@ Webhook Source                          Your Application
 
 - **Edge ingestion** — Accept webhooks at 300+ global edge locations.
 - **Instant ACK** — Return `202 Accepted` immediately after queuing. Webhook sources never time out.
-- **Signature verification** — Native Stripe (`t=,v1=` format), GitHub (`x-hub-signature-256`), and generic HMAC schemes.
+- **Provider-aware verification** — Each provider's signature format is handled natively. No manual crypto code.
 - **Rate limiting** — Configurable per-source ingress rate limiting (default 100 req/60s) with `X-RateLimit` headers.
 - **Idempotency** — Automatic deduplication via idempotency keys stored in KV with configurable TTL.
 
@@ -79,74 +142,65 @@ Webhook Source                          Your Application
 - **Export/Import** — Backup and restore configuration. Migrate between instances with one command.
 - **Payload archive** — Webhook payloads are archived in R2 for configurable retention periods.
 
-## Quick Start
-
-### One-Click Deploy
-
-Click the Deploy to Cloudflare button at the top of this page. Cloudflare will:
-
-1. Fork this repo to your GitHub account
-2. Provision D1, KV, Queues, Durable Objects, and R2 automatically
-3. Build and deploy via Workers Builds
-
-### Manual Setup
+## CLI
 
 ```bash
-# Clone the repo
-git clone https://github.com/hookedge/hookflare.git
-cd hookflare
-
-# Install dependencies
-pnpm install
-
-# Build shared types
-pnpm --filter @hookflare/shared build
-
-# Run locally
-pnpm --filter @hookflare/worker dev
-
-# Deploy to Cloudflare
-pnpm --filter @hookflare/worker deploy
+npm i -g hookflare
 ```
 
-### Send Your First Webhook
+### Connect in one command
 
 ```bash
-# 1. Create a source — Stripe with native signature verification
-hookflare sources create --json -d '{
-  "name": "stripe",
-  "verification": {"type": "stripe", "secret": "whsec_your_stripe_webhook_secret"}
-}'
+# Stripe → your API
+hookflare connect stripe --secret whsec_xxx --to https://myapp.com/hooks --events "payment_intent.*"
 
-# 2. Create a destination — your API endpoint
-hookflare dest create --json -d '{
-  "name": "my-app",
-  "url": "https://myapp.com/webhooks",
-  "retry_policy": {"strategy": "exponential", "max_retries": 10}
-}'
+# GitHub → your API
+hookflare connect github --secret ghsec_xxx --to https://myapp.com/hooks --events "push,pull_request"
 
-# 3. Connect them — forward all Stripe events
-hookflare subs create --json -d '{
-  "source_id": "src_xxx",
-  "destination_id": "dst_yyy",
-  "event_types": ["*"]
-}'
-
-# 4. Point Stripe's webhook URL to:
-#    https://your-hookflare.workers.dev/webhooks/src_xxx
+# Multiple environments
+hookflare connect stripe --secret whsec_prod --to https://api.myapp.com/hooks --name stripe-prod
+hookflare connect stripe --secret whsec_stg --to https://staging.myapp.com/hooks --name stripe-staging
 ```
 
-hookflare natively verifies Stripe's `stripe-signature` header (timestamp + HMAC-SHA256). Also supports GitHub (`x-hub-signature-256`) and generic HMAC webhooks.
+### Discover providers
 
-## Configuration
+```bash
+hookflare providers ls
+hookflare providers describe stripe --json
+```
 
-hookflare is configured via `wrangler.jsonc` and D1 database. Core settings:
+### Advanced: individual resources
 
-| Setting | Default | Description |
+```bash
+hookflare sources create -d '{...}'
+hookflare dest create -d '{...}'
+hookflare subs create -d '{...}'
+```
+
+### Agent-Friendly Features
+
+The CLI is designed as an **agent-first** interface — AI agents can operate hookflare without reading documentation:
+
+| Feature | Flag/Command | Purpose |
 |---|---|---|
-| `IDEMPOTENCY_TTL_S` | `86400` | Idempotency key TTL in seconds (24h) |
-| `PAYLOAD_ARCHIVE_DAYS` | `30` | Days to retain payloads in R2 |
-| `DELIVERY_TIMEOUT_MS` | `30000` | Per-request delivery timeout (30s) |
+| One-shot setup | `hookflare connect` | Source + destination + subscription in one command |
+| Structured output | `--json` | Machine-parseable JSON on all commands |
+| Raw JSON input | `-d / --data` | Send full API payload, skip flag mapping |
+| Provider discovery | `hookflare providers describe` | Event types and schemas at runtime |
+| Schema introspection | `hookflare schema` | Discover API resources and fields |
+| Dry run | `--dry-run` | Validate mutations without executing |
+| Field selection | `--fields` | Limit output columns, save context tokens |
+| Export/Import | `hookflare export/import` | Pipe-friendly config transfer |
+| Migrate | `hookflare migrate` | One-command instance-to-instance migration |
+
+```bash
+# Agent workflow: discover → validate → execute
+hookflare providers describe stripe --json                         # discover events
+hookflare connect stripe --secret whsec_xxx --to https://... --dry-run  # validate
+hookflare connect stripe --secret whsec_xxx --to https://... --json     # execute
+```
+
+See [`packages/cli/AGENTS.md`](packages/cli/AGENTS.md) for the full agent guide.
 
 ## Retry Policy
 
@@ -175,6 +229,16 @@ Default exponential schedule (10 retries, 1 min base, 24h cap):
 | DLQ | After all retries exhausted (~8 hour span) |
 
 Each destination can override strategy, retry count, interval, and which HTTP status codes trigger retries. Destinations can also respond with a `Retry-After` header to control retry timing.
+
+## Configuration
+
+hookflare is configured via `wrangler.jsonc` and D1 database. Core settings:
+
+| Setting | Default | Description |
+|---|---|---|
+| `IDEMPOTENCY_TTL_S` | `86400` | Idempotency key TTL in seconds (24h) |
+| `PAYLOAD_ARCHIVE_DAYS` | `30` | Days to retain payloads in R2 |
+| `DELIVERY_TIMEOUT_MS` | `30000` | Per-request delivery timeout (30s) |
 
 ## API Reference
 
@@ -239,37 +303,6 @@ Each destination can override strategy, retry count, interval, and which HTTP st
 |---|---|---|
 | `POST` | `/webhooks/:source_id` | Ingest a webhook from a source (public, rate-limited) |
 
-## CLI
-
-hookflare ships with an agent-optimized CLI. Install it globally:
-
-```bash
-npm i -g hookflare
-```
-
-### Agent-Friendly Features
-
-The CLI is designed as an **agent-first** interface — AI agents can operate hookflare without reading documentation:
-
-| Feature | Flag/Command | Purpose |
-|---|---|---|
-| Structured output | `--json` | Machine-parseable JSON on all commands |
-| Raw JSON input | `-d / --data` | Send full API payload, skip flag mapping |
-| Schema introspection | `hookflare schema` | Discover API resources and fields at runtime |
-| Dry run | `--dry-run` | Validate mutations without executing |
-| Field selection | `--fields` | Limit output columns, save context tokens |
-| Export/Import | `hookflare export/import` | Pipe-friendly config transfer |
-| Migrate | `hookflare migrate` | One-command instance-to-instance migration |
-
-```bash
-# Agent workflow: discover → validate → execute
-hookflare schema sources                                          # discover fields
-hookflare sources create --json --dry-run -d '{"name":"stripe"}'  # validate
-hookflare sources create --json -d '{"name":"stripe"}'            # execute
-```
-
-See [`packages/cli/AGENTS.md`](packages/cli/AGENTS.md) for the full agent guide.
-
 ## Development
 
 ```bash
@@ -314,10 +347,16 @@ hookflare/
 │   │   ├── test/                # Integration tests (vitest + Workers runtime)
 │   │   └── wrangler.jsonc       # Cloudflare Workers configuration
 │   ├── shared/                  # Shared TypeScript types
-│   └── cli/                     # CLI tool (npm: hookflare)
-│       ├── src/commands/        # Command implementations
-│       ├── AGENTS.md            # Agent skill file
-│       └── tsup.config.ts       # Bundle config
+│   ├── cli/                     # CLI tool (npm: hookflare)
+│   │   ├── src/commands/        # Command implementations
+│   │   ├── AGENTS.md            # Agent skill file
+│   │   └── tsup.config.ts       # Bundle config
+│   └── providers/               # Built-in provider definitions
+│       ├── stripe/
+│       ├── github/
+│       ├── slack/
+│       ├── shopify/
+│       └── vercel/
 ├── turbo.json                   # Turborepo task config
 ├── pnpm-workspace.yaml          # pnpm workspaces
 └── LICENSE                      # Apache 2.0
@@ -338,7 +377,8 @@ hookflare focuses on **receiving and reliably forwarding** webhooks. It is not a
 - **Zero infrastructure** — No Docker, PostgreSQL, or Redis. Runs entirely on Cloudflare Workers.
 - **Free forever** — Cloudflare Workers free tier handles most workloads. No VM costs, no idle charges.
 - **Deploy in 30 seconds** — One-click Cloudflare deploy button provisions everything automatically.
-- **Agent-optimized** — CLI with `--json`, `--dry-run`, schema introspection. AI agents can operate hookflare without reading docs.
+- **Provider ecosystem** — Built-in providers with typed event catalogs. Community-extensible via `defineProvider()`.
+- **Agent-optimized** — CLI with `--json`, `--dry-run`, provider discovery. AI agents can operate hookflare without reading docs.
 - **Apache 2.0** — No restrictions on commercial use or self-hosting.
 
 ## License
