@@ -1,6 +1,6 @@
 {
   "name": "hookflare",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "CLI for hookflare — open-source webhook infrastructure",
   "type": "module",
   "bin": {
