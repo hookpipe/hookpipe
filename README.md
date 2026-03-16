@@ -23,7 +23,7 @@ Webhooks are deceptively simple — until they aren't. Providers send them once 
 - **Idempotency** — Built-in deduplication so duplicate deliveries don't cause duplicate side effects.
 - **Circuit breaker** — Auto-pauses delivery to unhealthy destinations, probes for recovery.
 - **Zero infrastructure** — No Docker, PostgreSQL, or Redis. Runs entirely on Cloudflare Workers.
-- **Free forever** — Cloudflare Workers free tier handles most workloads. $0 idle cost.
+- **Free to start** — Runs on Cloudflare's free tier (~50K events/day). No credit card, no VM costs, $0 idle.
 
 ## Status
 
@@ -147,6 +147,62 @@ Webhook Source (Stripe, GitHub, ...)         Your Application (API)
 | **Config & Logs** | D1 (SQLite) | Sources, destinations, subscriptions, delivery logs |
 | **Idempotency Cache** | KV | Deduplication keys with TTL |
 | **Payload Archive** | R2 | Long-term storage for webhook payloads |
+
+## Delivery Guarantee
+
+hookflare provides **at-least-once delivery**. Each stage of the pipeline is protected:
+
+| Stage | What happens on failure | Data safe? |
+|---|---|---|
+| Ingress Worker crashes before queue | Provider gets non-2xx, provider retries | ✅ Provider holds the event |
+| Ingress succeeds, queue write fails | Worker returns 500, provider retries | ✅ Provider holds the event |
+| Queue → Consumer crash mid-flight | Cloudflare Queues retries (up to 3x), then DLQ | ✅ Queue holds the event |
+| Consumer → Delivery DO crash | Queue retries the message | ✅ Queue holds the event |
+| Delivery to your API fails (5xx/timeout) | Exponential backoff retries (up to 24h) | ✅ DO holds the task |
+| All retries exhausted | Event moved to DLQ, stays in D1 | ✅ Payload in R2, replayable |
+
+**What hookflare does NOT guarantee:**
+- **Exactly-once delivery** — your handler may receive the same event more than once. Use the `X-Hookflare-Event-Id` header for idempotency.
+- **Ordering** — events may arrive out of order under retry scenarios.
+
+## Failure Modes
+
+| Scenario | What happens | Recovery |
+|---|---|---|
+| Your API is down | Delivery retries with backoff (up to 24h) | Automatic when your API recovers |
+| Your API returns 500 continuously | Circuit breaker opens after 10 failures, pauses delivery | Auto-probes every 5 min, resumes on success |
+| Delivery retries exhausted | Event moved to DLQ status | `POST /destinations/:id/replay-failed` to batch retry |
+| hookflare Worker crashes | Cloudflare restarts automatically (stateless) | Automatic, sub-second |
+| D1 database unavailable | Ingress returns 500, provider retries | Automatic when D1 recovers |
+| R2 unavailable | Payload not archived, event still queued | Event delivered without archive |
+| KV unavailable | Idempotency check skipped | Possible duplicate delivery (at-least-once) |
+
+## Limits & Cost
+
+hookflare runs entirely on Cloudflare's free tier. No credit card required.
+
+**Free tier capacity: ~50,000 events/day** (bottleneck: D1 writes).
+
+| Resource | Free limit / day | hookflare usage per event |
+|---|---|---|
+| Workers requests | 100,000 | ~2 (ingress + consumer) |
+| Durable Object requests | 100,000 | ~1 (delivery) |
+| DO duration | 13,000 GB-s | ~0.025 GB-s (~200ms per delivery) |
+| D1 rows written | 100,000 | ~2 (event + delivery log) |
+| D1 rows read | 5,000,000 | ~4 (source + subscription lookup) |
+| Queues messages | 1,000,000 / month | ~1 |
+| R2 Class A ops | 1,000,000 / month | ~1 (payload archive) |
+
+**Workers Paid ($5/month) — for higher volume:**
+
+| Volume | Estimated cost | Notes |
+|---|---|---|
+| 50,000 events/month | $0 | Free tier covers it |
+| 500,000 events/month | ~$5 | Base plan covers most usage |
+| 5,000,000 events/month | ~$7-12 | DO requests + D1 writes overage |
+| 50,000,000 events/month | ~$40-80 | All resources contribute |
+
+For comparison: self-hosting Convoy or Svix requires a VM + PostgreSQL + Redis = $15-45/month minimum, regardless of volume.
 
 ## Retry Policy
 
@@ -357,7 +413,7 @@ hookflare focuses on **receiving and reliably forwarding** webhooks. It is not a
 ### Why hookflare?
 
 - **Zero infrastructure** — No Docker, PostgreSQL, or Redis. Runs entirely on Cloudflare Workers.
-- **Free forever** — Cloudflare Workers free tier handles most workloads. No VM costs, no idle charges.
+- **Free to start** — Runs on Cloudflare's free tier (~50K events/day). No credit card required.
 - **Deploy in 30 seconds** — One-click Cloudflare deploy button provisions everything automatically.
 - **Agent-optimized** — CLI with `--json`, `--dry-run`, schema introspection. AI agents can operate hookflare without reading docs.
 - **Apache 2.0** — No restrictions on commercial use or self-hosting.
