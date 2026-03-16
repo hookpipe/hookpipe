@@ -105,29 +105,31 @@ npm run deploy
 ### Send Your First Webhook
 
 ```bash
-# 1. Create a source (the webhook sender)
-curl -X POST http://localhost:8787/api/v1/sources \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your-api-key>" \
-  -d '{"name": "stripe", "verification": {"type": "hmac-sha256", "secret": "whsec_..."}}'
+# 1. Create a source — Stripe with native signature verification
+hookflare sources create --json -d '{
+  "name": "stripe",
+  "verification": {"type": "stripe", "secret": "whsec_your_stripe_webhook_secret"}
+}'
 
-# 2. Create a destination (where to forward)
-curl -X POST http://localhost:8787/api/v1/destinations \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your-api-key>" \
-  -d '{"name": "my-app", "url": "https://myapp.com/webhooks", "retry_policy": {"max_retries": 5}}'
+# 2. Create a destination — your API endpoint
+hookflare dest create --json -d '{
+  "name": "my-app",
+  "url": "https://myapp.com/webhooks",
+  "retry_policy": {"strategy": "exponential", "max_retries": 10}
+}'
 
-# 3. Create a subscription (connect source to destination)
-curl -X POST http://localhost:8787/api/v1/subscriptions \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your-api-key>" \
-  -d '{"source_id": "<source-id>", "destination_id": "<dest-id>", "event_types": ["*"]}'
+# 3. Connect them — forward all Stripe events
+hookflare subs create --json -d '{
+  "source_id": "src_xxx",
+  "destination_id": "dst_yyy",
+  "event_types": ["*"]
+}'
 
-# 4. Receive a webhook
-curl -X POST http://localhost:8787/webhooks/<source-id> \
-  -H "Content-Type: application/json" \
-  -d '{"event": "payment.completed", "data": {"amount": 4999}}'
+# 4. Point Stripe's webhook URL to:
+#    https://your-hookflare.workers.dev/webhooks/src_xxx
 ```
+
+hookflare natively verifies Stripe's `stripe-signature` header (timestamp + HMAC-SHA256). Also supports GitHub (`x-hub-signature-256`) and generic HMAC webhooks.
 
 ## Configuration
 
@@ -135,27 +137,37 @@ hookflare is configured via `wrangler.jsonc` and D1 database. Core settings:
 
 | Setting | Default | Description |
 |---|---|---|
-| `RETRY_MAX_ATTEMPTS` | `5` | Maximum delivery attempts per event |
-| `RETRY_BACKOFF_BASE_MS` | `30000` | Base delay for exponential backoff (30s) |
-| `RETRY_BACKOFF_MAX_MS` | `86400000` | Maximum backoff delay (24h) |
 | `IDEMPOTENCY_TTL_S` | `86400` | Idempotency key TTL in seconds (24h) |
 | `PAYLOAD_ARCHIVE_DAYS` | `30` | Days to retain payloads in R2 |
 | `DELIVERY_TIMEOUT_MS` | `30000` | Per-request delivery timeout (30s) |
 
 ## Retry Policy
 
-Default retry schedule with exponential backoff and jitter:
+Three retry strategies, configurable per destination:
+
+| Strategy | Behavior |
+|---|---|
+| **exponential** (default) | Delay doubles each attempt with jitter |
+| **linear** | Constant interval between retries |
+| **fixed** | Same delay every time |
+
+Default exponential schedule (10 retries, 1 min base, 24h cap):
 
 | Attempt | Delay |
 |---|---|
 | 1 | Immediate |
-| 2 | ~30 seconds |
+| 2 | ~1 minute |
 | 3 | ~2 minutes |
-| 4 | ~15 minutes |
-| 5 | ~1 hour |
-| DLQ | After all retries exhausted |
+| 4 | ~4 minutes |
+| 5 | ~8 minutes |
+| 6 | ~16 minutes |
+| 7 | ~32 minutes |
+| 8 | ~1 hour |
+| 9 | ~2 hours |
+| 10 | ~4 hours |
+| DLQ | After all retries exhausted (~8 hour span) |
 
-Each destination can override the default retry policy.
+Each destination can override strategy, retry count, interval, and which HTTP status codes trigger retries. Destinations can also respond with a `Retry-After` header to control retry timing.
 
 ## API Reference
 
