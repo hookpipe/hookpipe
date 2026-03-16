@@ -41,30 +41,29 @@ All Cloudflare services provide encryption at rest:
 ### Network
 
 - Cloudflare Workers enforce HTTPS/TLS on all inbound traffic.
-- Outbound delivery requests use the destination URL as configured (HTTPS recommended).
+- Outbound delivery requests require HTTPS destination URLs by default (SSRF protection).
+
+### SSRF Protection
+
+Destination URLs are validated on creation and update:
+- **Blocked**: private IPs (10.x, 172.16-31.x, 192.168.x, 127.x), link-local (169.254.x), localhost, metadata endpoints
+- **Required**: HTTPS (HTTP blocked by default)
+- Enforced via Zod schema validation in the API layer
+
+### Payload Size Limit
+
+Webhook ingress enforces a 256KB maximum payload size. Requests exceeding this limit receive `413 Payload Too Large`.
 
 ## Known Limitations
 
 ### Auth bootstrap mode
 
-When no `API_TOKEN` environment variable is set and no API keys exist in D1, the management API allows unauthenticated access to the key creation endpoint for first-run setup.
+A fresh deployment exposes `POST /api/v1/bootstrap` (unauthenticated) to create the first admin API key. This endpoint self-locks after first use. Between deployment and bootstrap, an attacker who discovers the URL could claim the instance.
 
-**Mitigation**: Set `API_TOKEN` via `wrangler secret put API_TOKEN` immediately after deployment.
-
-### No destination URL validation
-
-Destination URLs accept any value. No SSRF protection against internal IPs or non-HTTPS URLs.
-
-**Mitigation**: Only grant API keys to trusted users. URL validation is planned.
+**Mitigation**: Bootstrap immediately after deployment, or set `API_TOKEN` via `wrangler secret put API_TOKEN`. The env var always takes priority and can recover a compromised bootstrap.
 
 ### Rate limiter eventual consistency
 
 The KV-based rate limiter uses a non-atomic read-then-write pattern. Under high concurrent load, the actual request count may briefly exceed the configured limit.
 
 **Mitigation**: Use Cloudflare WAF rules for strict rate limiting. The built-in limiter is best-effort.
-
-### No payload size enforcement
-
-The ingress handler does not enforce a maximum request body size.
-
-**Mitigation**: Configure body size limits via Cloudflare WAF or Workers settings.

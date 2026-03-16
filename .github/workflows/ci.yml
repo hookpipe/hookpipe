@@ -40,6 +40,9 @@ jobs:
       - name: Integration tests — batch 2
         run: pnpm --filter @hookflare/worker vitest run test/secret-masking.test.ts test/transfer.test.ts test/delivery-manager.test.ts
 
+      - name: Integration tests — batch 3 (security)
+        run: pnpm --filter @hookflare/worker vitest run test/security.test.ts
+
       - name: Build CLI
         run: pnpm --filter hookflare build
 
