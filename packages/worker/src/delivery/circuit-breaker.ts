@@ -31,6 +31,8 @@ const DEFAULT_STATE: CircuitBreakerState = {
 const FAILURE_THRESHOLD = 10;
 // Wait this long before probing (half-open)
 const RECOVERY_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+// If a half-open probe doesn't resolve within this time, force re-evaluate
+const HALF_OPEN_WATCHDOG_MS = 30 * 1000; // 30 seconds
 
 const STORAGE_KEY = "circuit_breaker";
 
@@ -82,9 +84,24 @@ export class CircuitBreaker {
         return false; // Still open, reject
       }
 
-      case "half_open":
-        // Already probing, don't allow more until probe resolves
+      case "half_open": {
+        // Check if the probe has been stuck too long (watchdog)
+        if (state.halfOpenAt) {
+          const elapsed = Date.now() - new Date(state.halfOpenAt).getTime();
+          if (elapsed >= HALF_OPEN_WATCHDOG_MS) {
+            // Probe timed out — reopen circuit and schedule recovery
+            await this.setState({
+              ...state,
+              state: "open",
+              openedAt: new Date().toISOString(),
+              halfOpenAt: null,
+            });
+            return false;
+          }
+        }
+        // Probe is in-flight, don't allow more requests
         return false;
+      }
 
       default:
         return true;
@@ -142,15 +159,24 @@ export class CircuitBreaker {
   }
 
   /**
-   * Get the time in ms until the circuit should transition to half-open.
-   * Returns null if circuit is not open.
+   * Get the time in ms until the circuit should re-evaluate.
+   * Works for both open (recovery timeout) and half_open (watchdog timeout).
    */
   async getRecoveryDelayMs(): Promise<number | null> {
     const state = await this.getState();
-    if (state.state !== "open" || !state.openedAt) return null;
 
-    const elapsed = Date.now() - new Date(state.openedAt).getTime();
-    const remaining = RECOVERY_TIMEOUT_MS - elapsed;
-    return remaining > 0 ? remaining : 0;
+    if (state.state === "open" && state.openedAt) {
+      const elapsed = Date.now() - new Date(state.openedAt).getTime();
+      const remaining = RECOVERY_TIMEOUT_MS - elapsed;
+      return remaining > 0 ? remaining : 0;
+    }
+
+    if (state.state === "half_open" && state.halfOpenAt) {
+      const elapsed = Date.now() - new Date(state.halfOpenAt).getTime();
+      const remaining = HALF_OPEN_WATCHDOG_MS - elapsed;
+      return remaining > 0 ? remaining : 0;
+    }
+
+    return null;
   }
 }
