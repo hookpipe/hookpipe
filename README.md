@@ -3,7 +3,7 @@
 **Never miss a webhook.** Free, open-source, deploys to Cloudflare in 30 seconds.
 
 [![CI](https://github.com/hookedge/hookflare/actions/workflows/ci.yml/badge.svg)](https://github.com/hookedge/hookflare/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-104-brightgreen)](https://github.com/hookedge/hookflare/tree/main/packages/worker/test)
+[![Tests](https://img.shields.io/badge/tests-123-brightgreen)](https://github.com/hookedge/hookflare/tree/main/packages/worker/test)
 [![npm](https://img.shields.io/npm/v/hookflare)](https://www.npmjs.com/package/hookflare)
 [![npm downloads](https://img.shields.io/npm/dm/hookflare)](https://www.npmjs.com/package/hookflare)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
