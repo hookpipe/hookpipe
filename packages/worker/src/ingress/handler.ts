@@ -36,8 +36,18 @@ export async function handleWebhookIngress(c: Context<{ Bindings: Env }>) {
     throw new ApiError(404, `Source not found: ${sourceId}`, "SOURCE_NOT_FOUND");
   }
 
+  // Payload size limit (default 256KB)
+  const MAX_PAYLOAD_BYTES = 256 * 1024;
+  const contentLength = parseInt(c.req.header("content-length") ?? "0", 10);
+  if (contentLength > MAX_PAYLOAD_BYTES) {
+    throw new ApiError(413, `Payload too large: ${contentLength} bytes (max ${MAX_PAYLOAD_BYTES})`, "PAYLOAD_TOO_LARGE");
+  }
+
   // Read raw body
   const body = await c.req.text();
+  if (body.length > MAX_PAYLOAD_BYTES) {
+    throw new ApiError(413, `Payload too large: ${body.length} bytes (max ${MAX_PAYLOAD_BYTES})`, "PAYLOAD_TOO_LARGE");
+  }
   const provider = source.provider ?? null;
 
   // 2. Handle challenge (e.g. Slack url_verification)

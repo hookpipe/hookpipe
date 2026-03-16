@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Context } from "hono";
+import { validateDestinationUrl } from "./url-validation";
 
 // --- Sources ---
 
@@ -36,15 +37,20 @@ export const retryPolicySchema = z.object({
   on_status: z.array(z.string()).optional(),
 });
 
+const safeUrl = z.string().url("url must be a valid URL").refine(
+  (url: string) => validateDestinationUrl(url) === null,
+  { message: "URL blocked by SSRF protection (private IP, localhost, or non-HTTPS)" },
+);
+
 export const createDestinationSchema = z.object({
   name: z.string().min(1, "name is required").max(100),
-  url: z.string().url("url must be a valid URL"),
+  url: safeUrl,
   retry_policy: retryPolicySchema.optional(),
 });
 
 export const updateDestinationSchema = z.object({
   name: z.string().min(1).max(100).optional(),
-  url: z.string().url().optional(),
+  url: safeUrl.optional(),
   retry_policy: retryPolicySchema.partial().optional(),
 });
 
