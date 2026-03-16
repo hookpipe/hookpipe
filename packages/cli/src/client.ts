@@ -108,12 +108,22 @@ export class HookflareClient {
   }
 
   // Events
-  listEvents(opts?: { source_id?: string; limit?: number }) {
+  listEvents(opts?: { source_id?: string; after?: string; limit?: number }) {
     const params = new URLSearchParams();
     if (opts?.source_id) params.set("source_id", opts.source_id);
+    if (opts?.after) params.set("after", opts.after);
     if (opts?.limit) params.set("limit", String(opts.limit));
     const qs = params.toString();
     return this.request("GET", `/api/v1/events${qs ? `?${qs}` : ""}`);
+  }
+
+  listDeliveries(opts?: { after?: string; destination_id?: string; limit?: number }) {
+    const params = new URLSearchParams();
+    if (opts?.after) params.set("after", opts.after);
+    if (opts?.destination_id) params.set("destination_id", opts.destination_id);
+    if (opts?.limit) params.set("limit", String(opts.limit));
+    const qs = params.toString();
+    return this.request("GET", `/api/v1/events/deliveries${qs ? `?${qs}` : ""}`);
   }
 
   getEvent(id: string) {

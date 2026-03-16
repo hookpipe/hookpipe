@@ -7,6 +7,7 @@ import { subscriptionsCommand } from "./commands/subscriptions.js";
 import { eventsCommand } from "./commands/events.js";
 import { exportCommand, importCommand, migrateCommand } from "./commands/transfer.js";
 import { devCommand } from "./commands/dev.js";
+import { tailCommand } from "./commands/tail.js";
 import { HookflareClient } from "./client.js";
 
 const program = new Command();
@@ -166,6 +167,7 @@ program.addCommand(exportCommand);
 program.addCommand(importCommand);
 program.addCommand(migrateCommand);
 program.addCommand(devCommand);
+program.addCommand(tailCommand);
 
 // Global error handler
 program.exitOverride();
