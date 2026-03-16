@@ -115,12 +115,20 @@ app.post("/:id/replay-failed", async (c) => {
     const event = await db.getEvent(d, eventId);
     if (!event) continue;
 
+    // Fetch payload from R2 for re-enqueue
+    let payload = "";
+    if (event.payload_r2_key) {
+      const obj = await c.env.PAYLOAD_BUCKET.get(event.payload_r2_key);
+      if (obj) payload = await obj.text();
+    }
+
     await c.env.WEBHOOK_QUEUE.send({
       eventId: event.id,
       sourceId: event.source_id,
       eventType: event.event_type,
-      payloadR2Key: event.payload_r2_key ?? "",
+      payload,
       headers: event.headers ? JSON.parse(event.headers) : {},
+      idempotencyKey: event.idempotency_key,
       receivedAt: new Date().toISOString(),
     });
     replayed++;

@@ -54,13 +54,21 @@ app.post("/:id/replay", async (c) => {
   const event = await db.getEvent(createDb(c.env.DB), eventId);
   if (!event) throw notFound("Event not found");
 
+  // Fetch payload from R2 for re-enqueue
+  let payload = "";
+  if (event.payload_r2_key) {
+    const obj = await c.env.PAYLOAD_BUCKET.get(event.payload_r2_key);
+    if (obj) payload = await obj.text();
+  }
+
   // Re-enqueue the event
   await c.env.WEBHOOK_QUEUE.send({
     eventId: event.id,
     sourceId: event.source_id,
     eventType: event.event_type,
-    payloadR2Key: event.payload_r2_key ?? "",
+    payload,
     headers: event.headers ? JSON.parse(event.headers) : {},
+    idempotencyKey: event.idempotency_key,
     receivedAt: new Date().toISOString(),
   });
 

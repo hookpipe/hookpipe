@@ -1,11 +1,14 @@
 import type { Env, QueueMessage, DeliveryTask } from "../lib/types";
 import { generateId } from "../lib/id";
-import { createDb, getSubscriptionsBySource, getDestination, createDelivery } from "../db/queries";
+import { createDb, getSubscriptionsBySource, getDestination, createDelivery, createEvent } from "../db/queries";
 
 /**
- * Queue consumer: reads webhook events from the queue,
- * resolves subscriptions, and dispatches delivery tasks
- * to the Durable Object for each destination.
+ * Queue consumer: processes ingested webhook events.
+ *
+ * Responsibilities moved here from ingress for performance:
+ * 1. Archive payload to R2
+ * 2. Record event in D1
+ * 3. Resolve subscriptions and dispatch to Delivery DOs
  */
 export async function handleQueueBatch(
   batch: MessageBatch<QueueMessage>,
@@ -25,7 +28,23 @@ export async function handleQueueBatch(
 async function processMessage(msg: QueueMessage, env: Env): Promise<void> {
   const db = createDb(env.DB);
 
-  // Find all active subscriptions for this source
+  // 1. Archive payload to R2 + record event in D1 (parallel)
+  const r2Key = `${msg.sourceId}/${msg.eventId}`;
+  await Promise.all([
+    env.PAYLOAD_BUCKET.put(r2Key, msg.payload, {
+      httpMetadata: { contentType: msg.headers["content-type"] ?? "application/octet-stream" },
+    }),
+    createEvent(db, {
+      id: msg.eventId,
+      source_id: msg.sourceId,
+      event_type: msg.eventType,
+      idempotency_key: msg.idempotencyKey,
+      payload_r2_key: r2Key,
+      headers: JSON.stringify(msg.headers),
+    }),
+  ]);
+
+  // 2. Find all active subscriptions for this source
   const subscriptions = await getSubscriptionsBySource(db, msg.sourceId);
 
   for (const sub of subscriptions) {
@@ -52,7 +71,7 @@ async function processMessage(msg: QueueMessage, env: Env): Promise<void> {
       eventId: msg.eventId,
       destinationId: dest.id,
       destinationUrl: dest.url,
-      payloadR2Key: msg.payloadR2Key,
+      payloadR2Key: r2Key,
       headers: msg.headers,
       attempt: 1,
       maxRetries: dest.max_retries,
@@ -78,7 +97,7 @@ function matchesEventType(eventType: string | null, filterJson: string): boolean
   try {
     const filters: string[] = JSON.parse(filterJson);
     if (filters.includes("*")) return true;
-    if (!eventType) return true; // No type means accept all
+    if (!eventType) return true;
     return filters.some((f) => {
       if (f.endsWith(".*")) {
         return eventType.startsWith(f.slice(0, -1));

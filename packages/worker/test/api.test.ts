@@ -176,7 +176,7 @@ describe("Subscriptions API", () => {
 });
 
 describe("Webhook Ingress", () => {
-  it("accepts webhook and creates event", async () => {
+  it("accepts webhook and returns 202 with event ID", async () => {
     // Setup source
     const srcRes = await SELF.fetch(
       request("/api/v1/sources", { method: "POST", body: { name: "ingress-test" } }),
@@ -191,17 +191,10 @@ describe("Webhook Ingress", () => {
       }),
     );
     expect(webhookRes.status).toBe(202);
-    const webhook = await webhookRes.json<{ event_id: string }>();
+    const webhook = await webhookRes.json<{ event_id: string; message: string }>();
     expect(webhook.event_id).toMatch(/^evt_/);
-
-    // Verify event was recorded
-    const eventRes = await SELF.fetch(request(`/api/v1/events/${webhook.event_id}`));
-    expect(eventRes.status).toBe(200);
-    const event = await eventRes.json<{
-      data: { event_type: string; source_id: string };
-    }>();
-    expect(event.data.event_type).toBe("order.created");
-    expect(event.data.source_id).toBe(src.data.id);
+    expect(webhook.message).toBe("Accepted");
+    // Note: event is persisted async by queue consumer, not immediately in D1
   });
 
   it("returns 404 for unknown source", async () => {

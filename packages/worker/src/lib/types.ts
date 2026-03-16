@@ -28,8 +28,9 @@ export interface QueueMessage {
   eventId: string;
   sourceId: string;
   eventType: string | null;
-  payloadR2Key: string;
+  payload: string;           // raw webhook body (moved from R2 to queue)
   headers: Record<string, string>;
+  idempotencyKey: string | null;
   receivedAt: string;
 }
 

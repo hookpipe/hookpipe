@@ -49,11 +49,8 @@ async function createPipeline(destUrl = "https://httpbin.org/post") {
   return { sourceId: src.data.id, destId: dst.data.id, subId: sub.data.id };
 }
 
-describe("Delivery lifecycle — ingress to event", () => {
-  it("webhook ingress creates event record", async () => {
-    const { sourceId } = await createPipeline();
-
-    // Send webhook (no signature — source has hmac-sha256 but we'll skip verification for test)
+describe("Delivery lifecycle — ingress", () => {
+  it("webhook ingress returns 202 with event ID (event persisted async by queue)", async () => {
     // Create a source without verification for simpler testing
     const srcRes = await SELF.fetch(
       request("/api/v1/sources", {
@@ -74,12 +71,8 @@ describe("Delivery lifecycle — ingress to event", () => {
     const webhook = await webhookRes.json<{ event_id: string }>();
     expect(webhook.event_id).toMatch(/^evt_/);
 
-    // Verify event recorded in D1
-    const eventRes = await SELF.fetch(request(`/api/v1/events/${webhook.event_id}`));
-    expect(eventRes.status).toBe(200);
-    const event = await eventRes.json<{ data: { event_type: string; payload: string } }>();
-    expect(event.data.event_type).toBe("test.event");
-    expect(event.data.payload).toContain('"amount":1000');
+    // Note: event is NOT yet in D1 — it will be created by the queue consumer.
+    // In production, the queue consumer runs async. In tests, it doesn't auto-run.
   });
 });
 
@@ -204,8 +197,8 @@ describe("Retry-After header parsing", () => {
 });
 
 describe("Event replay", () => {
-  it("replays a single event", async () => {
-    // Create a source and send a webhook
+  it("replays an event that exists in D1", async () => {
+    // Create a source
     const srcRes = await SELF.fetch(
       request("/api/v1/sources", {
         method: "POST",
@@ -214,21 +207,23 @@ describe("Event replay", () => {
     );
     const src = await srcRes.json<{ data: { id: string } }>();
 
-    const webhookRes = await SELF.fetch(
-      request(`/webhooks/${src.data.id}`, {
-        method: "POST",
-        body: { type: "replay.test" },
-      }),
-    );
-    const webhook = await webhookRes.json<{ event_id: string }>();
+    // Manually create an event in D1 (simulates what queue consumer does)
+    const eventId = `evt_replay_${Date.now()}`;
+    const r2Key = `${src.data.id}/${eventId}`;
+
+    // Write payload to R2 and event to D1 via env (as queue consumer would)
+    await env.PAYLOAD_BUCKET.put(r2Key, '{"type":"replay.test"}');
+    await env.DB.prepare(
+      "INSERT INTO events (id, source_id, event_type, payload_r2_key, headers) VALUES (?, ?, ?, ?, ?)",
+    ).bind(eventId, src.data.id, "replay.test", r2Key, "{}").run();
 
     // Replay the event
     const replayRes = await SELF.fetch(
-      request(`/api/v1/events/${webhook.event_id}/replay`, { method: "POST" }),
+      request(`/api/v1/events/${eventId}/replay`, { method: "POST" }),
     );
     expect(replayRes.status).toBe(202);
     const replay = await replayRes.json<{ message: string; event_id: string }>();
-    expect(replay.event_id).toBe(webhook.event_id);
+    expect(replay.event_id).toBe(eventId);
   });
 });
 
