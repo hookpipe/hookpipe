@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { HookflareClient } from "../client.js";
 import { output, outputTable, outputSuccess } from "../output.js";
+import { tailCommand } from "./tail.js";
 
 export const eventsCommand = new Command("events")
   .description("View webhook events and deliveries");
@@ -57,6 +58,9 @@ eventsCommand
       })),
     );
   });
+
+// Alias: `hookflare events tail` → same as `hookflare tail`
+eventsCommand.addCommand(tailCommand);
 
 eventsCommand
   .command("replay")
