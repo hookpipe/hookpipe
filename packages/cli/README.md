@@ -20,11 +20,9 @@ hookflare sits between webhook providers and your application. It accepts webhoo
 
 ## Quick Start
 
-### 1. Deploy hookflare (one-click)
+### 1. Deploy hookflare
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/hookedge/hookflare)
-
-Or manually: `git clone https://github.com/hookedge/hookflare && cd hookflare && npx wrangler deploy`
+If you haven't deployed hookflare yet, see the [deployment guide on GitHub](https://github.com/hookedge/hookflare#quick-start) — one-click deploy to Cloudflare or `npx wrangler deploy`.
 
 ### 2. Install the CLI
 
