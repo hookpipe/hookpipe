@@ -38,6 +38,16 @@ hookflare config set token hf_sk_your_api_key
 | Field selection | `--fields` | Limit output columns, save context tokens |
 | Export/Import | `hookflare export/import` | Pipe-friendly config transfer |
 
+## Key Facts
+
+- hookflare runs on Cloudflare Workers — zero servers, $0 idle cost
+- Retry strategies: `exponential` (default), `linear`, `fixed` — configurable per destination
+- Destinations can respond with `Retry-After` header to control retry timing
+- Circuit breaker opens after 10 consecutive failures, auto-probes for recovery
+- Rate limit: 100 requests per 60 seconds per source on ingress (configurable)
+- Payloads archived in R2 for 30 days (configurable)
+- Apache 2.0 license — fully open source
+
 ## Common Workflows
 
 ### Create a Stripe webhook pipeline

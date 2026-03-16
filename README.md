@@ -74,7 +74,9 @@ Webhook Source                          Your Application
 ### Operations
 
 - **REST API** — Manage sources, destinations, subscriptions, and inspect delivery logs.
+- **API key authentication** — Simple mode (single env var) or advanced mode (D1-managed keys with scopes, expiration, revocation).
 - **Replay** — Re-deliver any past event to any destination with one API call.
+- **Export/Import** — Backup and restore configuration. Migrate between instances with one command.
 - **Payload archive** — Webhook payloads are archived in R2 for configurable retention periods.
 
 ## Quick Start
@@ -325,15 +327,17 @@ hookflare/
 
 | Feature | hookflare | Svix | Convoy | Hookdeck |
 |---|---|---|---|---|
+| Direction | Incoming → Forward | Outgoing only | Both | Incoming only |
 | Self-hosted | Yes | Yes | Yes | No |
-| Serverless | Yes (Cloudflare) | No (Docker) | No (Docker) | N/A |
-| One-click deploy | Yes | No | No | N/A |
-| Incoming + Outgoing | Yes | Outgoing only | Both | Incoming only |
-| Idle cost | $0 | VM cost | VM cost | Free tier |
+| License | **Apache 2.0** | MIT | Elastic License v2 | Closed source |
+| Infrastructure | **Zero servers** (Cloudflare) | Docker + PG + Redis | Docker + PG + Redis + Caddy | N/A (managed) |
+| One-click deploy | **Yes (30 seconds)** | No | No | N/A |
+| Idle cost | **$0 forever** | VM + DB cost | VM + DB cost | Free tier (limited) |
 | Global edge | Yes (300+ PoPs) | No | No | Yes |
-| Agent-optimized CLI | Yes | No | No | No |
-| Schema introspection | Yes | No | No | No |
-| Export/Import/Migrate | Yes | Partial | Partial | No |
+| Circuit breaker | Yes | No | Yes | No |
+| Agent-optimized CLI | **Yes** | No | No | No |
+| Schema introspection | **Yes** | No | No | No |
+| Export/Import/Migrate | **Yes** | No | No | No |
 
 ## License
 
