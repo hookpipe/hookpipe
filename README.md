@@ -323,21 +323,23 @@ hookflare/
 └── LICENSE                      # Apache 2.0
 ```
 
-## Comparisons
+## How hookflare compares
 
-| Feature | hookflare | Svix | Convoy | Hookdeck |
-|---|---|---|---|---|
-| Direction | Incoming → Forward | Outgoing only | Both | Incoming only |
-| Self-hosted | Yes | Yes | Yes | No |
-| License | **Apache 2.0** | MIT | Elastic License v2 | Closed source |
-| Infrastructure | **Zero servers** (Cloudflare) | Docker + PG + Redis | Docker + PG + Redis + Caddy | N/A (managed) |
-| One-click deploy | **Yes (30 seconds)** | No | No | N/A |
-| Idle cost | **$0 forever** | VM + DB cost | VM + DB cost | Free tier (limited) |
-| Global edge | Yes (300+ PoPs) | No | No | Yes |
-| Circuit breaker | Yes | No | Yes | No |
-| Agent-optimized CLI | **Yes** | No | No | No |
-| Schema introspection | **Yes** | No | No | No |
-| Export/Import/Migrate | **Yes** | No | No | No |
+hookflare focuses on **receiving and reliably forwarding** webhooks. It is not a replacement for outgoing webhook services.
+
+| If you need to... | Consider |
+|---|---|
+| Receive webhooks and forward to your API | **hookflare**, Hookdeck, Convoy |
+| Send webhooks to your customers | Svix, Convoy |
+| Both incoming and outgoing | Convoy |
+
+### Why hookflare?
+
+- **Zero infrastructure** — No Docker, PostgreSQL, or Redis. Runs entirely on Cloudflare Workers.
+- **Free forever** — Cloudflare Workers free tier handles most workloads. No VM costs, no idle charges.
+- **Deploy in 30 seconds** — One-click Cloudflare deploy button provisions everything automatically.
+- **Agent-optimized** — CLI with `--json`, `--dry-run`, schema introspection. AI agents can operate hookflare without reading docs.
+- **Apache 2.0** — No restrictions on commercial use or self-hosting.
 
 ## License
 
