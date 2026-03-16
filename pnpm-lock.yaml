@@ -17,6 +17,9 @@ importers:
 
   packages/cli:
     dependencies:
+      '@hookflare/providers':
+        specifier: workspace:*
+        version: link:../providers
       '@hookflare/shared':
         specifier: workspace:*
         version: link:../shared

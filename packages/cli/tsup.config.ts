@@ -8,5 +8,5 @@ export default defineConfig({
   dts: false,
   banner: { js: "#!/usr/bin/env node" },
   // Bundle everything so the published package is self-contained
-  noExternal: ["@hookflare/shared"],
+  noExternal: ["@hookflare/shared", "@hookflare/providers"],
 });
