@@ -25,6 +25,9 @@ jobs:
       - name: Build shared
         run: pnpm --filter @hookflare/shared build
 
+      - name: Build providers
+        run: pnpm --filter @hookflare/providers build
+
       - name: Typecheck
         run: pnpm --filter @hookflare/worker typecheck && pnpm --filter hookflare typecheck
 
