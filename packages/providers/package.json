@@ -1,14 +1,40 @@
 {
   "name": "@hookpipe/providers",
   "version": "0.1.0",
-  "private": true,
+  "description": "Typed webhook provider definitions — verify signatures, parse events, validate payloads, and browse event catalogs.",
   "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hookpipe/hookpipe",
+    "directory": "packages/providers"
+  },
+  "homepage": "https://github.com/hookpipe/hookpipe/tree/main/packages/providers",
+  "keywords": [
+    "webhook",
+    "webhooks",
+    "provider",
+    "stripe",
+    "github",
+    "slack",
+    "shopify",
+    "vercel",
+    "signature",
+    "verification",
+    "schema",
+    "zod"
+  ],
+  "sideEffects": false,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": "./dist/index.js",
     "./define": "./dist/define.js"
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit"
