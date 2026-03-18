@@ -8,6 +8,7 @@ on:
 permissions:
   id-token: write
   contents: read
+  packages: write
 
 jobs:
   check:
@@ -44,5 +45,35 @@ jobs:
         run: pnpm --filter @hookpipe/shared build
       - name: Build CLI
         run: pnpm --filter hookpipe build
-      - run: npm publish --access public
+      - name: Publish to npm
+        run: npm publish --access public --provenance
         working-directory: packages/cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  update-homebrew:
+    name: Update Homebrew formula
+    needs: publish-cli
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout homebrew tap
+        uses: actions/checkout@v4
+        with:
+          repository: hookpipe/homebrew-hookpipe
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-hookpipe
+      - name: Update formula version and SHA256
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          URL="https://registry.npmjs.org/hookpipe/-/hookpipe-${VERSION}.tgz"
+          SHA256=$(curl -sL "$URL" | shasum -a 256 | cut -d' ' -f1)
+          sed -i "s|url \".*\"|url \"${URL}\"|" homebrew-hookpipe/Formula/hookpipe.rb
+          sed -i "s|sha256 \".*\"|sha256 \"${SHA256}\"|" homebrew-hookpipe/Formula/hookpipe.rb
+      - name: Commit and push
+        run: |
+          cd homebrew-hookpipe
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/hookpipe.rb
+          git commit -m "hookpipe ${GITHUB_REF_NAME#v}"
+          git push
