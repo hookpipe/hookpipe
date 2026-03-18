@@ -4,6 +4,7 @@
 
 [![CI](https://github.com/hookpipe/hookpipe/actions/workflows/ci.yml/badge.svg)](https://github.com/hookpipe/hookpipe/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/hookpipe)](https://www.npmjs.com/package/hookpipe)
+[![providers](https://img.shields.io/npm/v/@hookpipe/providers?label=providers)](https://www.npmjs.com/package/@hookpipe/providers)
 [![npm downloads](https://img.shields.io/npm/dm/hookpipe)](https://www.npmjs.com/package/hookpipe)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -17,7 +18,8 @@
 
 Webhooks are deceptively simple — until they aren't. Providers send them once and move on. If your server is down, slow, or returns an error, that event is gone. hookpipe sits between webhook sources and your application to make sure **nothing gets lost**.
 
-- **Built-in providers** — Stripe, GitHub, Slack, Shopify, Vercel out of the box. Each provider includes signature verification, typed event catalogs, and setup instructions. Community-extensible via [`defineProvider()`](packages/providers/DESIGN.md) — one file, three fields.
+- **Built-in providers** — Stripe, GitHub, Slack, Shopify, Vercel out of the box. Each provider includes signature verification, typed event catalogs, and setup instructions. Community-extensible via [`defineProvider()`](packages/providers/DESIGN.md) — one file, four fields.
+- **Payload schemas** — Zod schemas for type-safe webhook payload validation. [`@hookpipe/providers`](https://www.npmjs.com/package/@hookpipe/providers) works standalone — use it in any TypeScript project, no hookpipe runtime needed.
 - **Never miss a webhook** — Incoming payloads are immediately queued at the edge before your backend even processes them.
 - **Reliable delivery** — Automatic retries with exponential backoff, configurable per destination. Circuit breaker auto-pauses unhealthy destinations.
 - **Zero infrastructure** — No Docker, PostgreSQL, or Redis. Runs entirely on Cloudflare Workers.
@@ -174,6 +176,46 @@ Webhook Source (Stripe, GitHub, ...)         Your Application (API)
 | **Config & Logs** | D1 (SQLite) | Sources, destinations, subscriptions, delivery logs |
 | **Idempotency Cache** | KV | Deduplication keys with TTL (read on ingress, write on accept) |
 | **Payload Archive** | R2 | Long-term storage for webhook payloads (written by consumer, not ingress) |
+
+## Providers
+
+Providers are **knowledge-only modules** — they describe *what* to verify and *what* the payload looks like, not *how* to verify. The core engine owns all processing logic.
+
+[`@hookpipe/providers`](https://www.npmjs.com/package/@hookpipe/providers) is published as a standalone npm package. Use it with the full hookpipe stack, or independently in any TypeScript project:
+
+```typescript
+import { stripe } from '@hookpipe/providers';
+
+// Get verification config
+stripe.verification;  // → { type: 'stripe-signature', header: 'stripe-signature' }
+
+// Parse event type from payload
+stripe.parseEventType(body);  // → 'payment_intent.succeeded'
+
+// Validate payload with Zod schema
+const event = stripe.events['payment_intent.succeeded'];
+if (typeof event !== 'string' && event.schema) {
+  const result = event.schema.safeParse(body);
+}
+```
+
+| Provider | Events | Verification | Schema | Challenge |
+|----------|--------|-------------|--------|-----------|
+| Stripe   | 22     | stripe-signature | 3 events | — |
+| GitHub   | 18     | hmac-sha256 | — | — |
+| Slack    | 10     | slack-signature | — | ✓ |
+| Shopify  | 17     | hmac-sha256 (base64) | — | — |
+| Vercel   | 9      | hmac-sha1 | — | — |
+
+Schemas are progressive — added per event as the project matures. Providers also support encrypted payloads (JWS, AES) via the `decode` capability, enabling integration with services beyond simple HMAC signing. See the [Provider Design Guide](packages/providers/DESIGN.md) for the full specification.
+
+**Three-tier ecosystem:**
+
+| Tier | Package naming | Maintained by |
+|---|---|---|
+| Built-in | `@hookpipe/providers` | hookpipe team |
+| Official | `@hookpipe/provider-<name>` | hookpipe org |
+| Community | `hookpipe-provider-<name>` | Anyone |
 
 ## Delivery Guarantee
 
