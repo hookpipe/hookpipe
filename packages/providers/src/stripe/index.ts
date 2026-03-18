@@ -4,7 +4,7 @@ import { defineProvider } from "../define";
 const stripeEvent = z.object({
   id: z.string(),
   object: z.literal("event"),
-  api_version: z.string(),
+  api_version: z.string().nullable(),
   created: z.number(),
 });
 

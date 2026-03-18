@@ -47,7 +47,7 @@ Webhooks are deceptively simple — until they aren't. Providers send them once 
 | `hookpipe connect` (one-shot setup) | ✅ Implemented | Source + destination + subscription in one command |
 | `hookpipe providers` (provider catalog) | ✅ Implemented | Browse providers and event types |
 | Pre-built providers (Stripe, GitHub, Slack, Shopify, Vercel) | ✅ Implemented | Event catalogs, verification, presets |
-| `defineProvider()` (community providers) | ✅ Implemented | One file, three fields, publish to npm or GitHub |
+| `defineProvider()` (community providers) | ✅ Implemented | One file, four fields, publish to npm or GitHub |
 | SSRF protection on destination URLs | ✅ Implemented | Blocks private IPs, localhost, non-HTTPS |
 | Payload size limit (256KB) | ✅ Implemented | Returns 413 on oversized webhooks |
 | DLQ notifications | ✅ Implemented | Webhook callback when deliveries permanently fail |
