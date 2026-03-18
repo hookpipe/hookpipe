@@ -47,6 +47,7 @@ export interface SecretDefinition {
 export interface EventDefinition {
   description: string;
   category?: string;
+  schema?: import("zod").ZodType;
 }
 
 export type EventCatalog = Record<string, string | EventDefinition>;
