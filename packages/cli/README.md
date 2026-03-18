@@ -141,7 +141,7 @@ Key flags: `--json` (structured output), `--dry-run` (safe validation), `-d/--da
 |---|---|
 | `connect <provider>` | One-shot setup: source + destination + subscription |
 | `init` | Bootstrap admin API key on a fresh instance |
-| `providers ls/describe` | Browse supported providers, events, and verification |
+| `providers ls/describe` | Browse supported providers, events, and verification (powered by [`@hookpipe/providers`](https://www.npmjs.com/package/@hookpipe/providers)) |
 | `sources create/ls/get/rm` | Manage webhook receiving endpoints |
 | `dest create/ls/get/rm` | Manage delivery destinations with retry policies |
 | `subs create/ls/rm` | Manage routing rules (source → destination) |
@@ -157,6 +157,7 @@ Key flags: `--json` (structured output), `--dry-run` (safe validation), `-d/--da
 ## Links
 
 - [GitHub](https://github.com/hookpipe/hookpipe) — source code, architecture, benchmarks
+- [`@hookpipe/providers`](https://www.npmjs.com/package/@hookpipe/providers) — provider definitions, usable standalone for event catalogs and Zod payload schemas
 - [Agent Guide](https://github.com/hookpipe/hookpipe/blob/main/packages/cli/AGENTS.md) — rules, workflows, ID formats
 
 ## License
