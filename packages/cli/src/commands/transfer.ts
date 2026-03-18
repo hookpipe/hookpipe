@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { readFileSync, writeFileSync } from "node:fs";
-import { HookflareClient } from "../client.js";
+import { HookpipeClient } from "../client.js";
 import { output, outputSuccess, outputError } from "../output.js";
 
 export const exportCommand = new Command("export")
@@ -8,12 +8,12 @@ export const exportCommand = new Command("export")
   .option("-o, --output <file>", "Write to file instead of stdout")
   .addHelpText("after", `
 Examples:
-  $ hookflare export                          # print JSON to stdout
-  $ hookflare export -o backup.json           # save to file
-  $ hookflare export | hookflare import \\
+  $ hookpipe export                          # print JSON to stdout
+  $ hookpipe export -o backup.json           # save to file
+  $ hookpipe export | hookpipe import \\
       --target https://other.instance.com     # pipe to another instance`)
   .action(async (opts) => {
-    const client = new HookflareClient();
+    const client = new HookpipeClient();
     const res = await client.exportConfig();
 
     if (opts.output) {
@@ -32,10 +32,10 @@ export const importCommand = new Command("import")
   .option("--target-key <key>", "Target instance API key")
   .addHelpText("after", `
 Examples:
-  $ hookflare import -f backup.json           # import from file
-  $ cat backup.json | hookflare import        # import from stdin
-  $ hookflare import -f backup.json \\
-      --target https://acme.hookedge.dev \\
+  $ hookpipe import -f backup.json           # import from file
+  $ cat backup.json | hookpipe import        # import from stdin
+  $ hookpipe import -f backup.json \\
+      --target https://acme.hookpipe.dev \\
       --target-key hf_sk_xxx                  # import to a different instance
 
 Behavior:
@@ -68,7 +68,7 @@ Behavior:
     if (opts.target) clientOpts.apiUrl = opts.target;
     if (opts.targetKey) clientOpts.token = opts.targetKey;
 
-    const client = new HookflareClient(clientOpts);
+    const client = new HookpipeClient(clientOpts);
     const res = await client.importConfig(data);
     const result = res.data as {
       sources: { created: number; skipped: number };
@@ -83,25 +83,25 @@ Behavior:
   });
 
 export const migrateCommand = new Command("migrate")
-  .description("Migrate configuration between hookflare instances")
+  .description("Migrate configuration between hookpipe instances")
   .requiredOption("--from <url>", "Source instance URL")
   .requiredOption("--from-key <key>", "Source instance API key")
   .requiredOption("--to <url>", "Target instance URL")
   .requiredOption("--to-key <key>", "Target instance API key")
   .addHelpText("after", `
 Examples:
-  # Self-hosted → hookedge managed
-  $ hookflare migrate \\
+  # Self-hosted → hookpipe managed
+  $ hookpipe migrate \\
       --from http://localhost:8787 --from-key hf_sk_old \\
-      --to https://acme.hookedge.dev --to-key hf_sk_new
+      --to https://acme.hookpipe.dev --to-key hf_sk_new
 
-  # hookedge managed → self-hosted (reverse migration)
-  $ hookflare migrate \\
-      --from https://acme.hookedge.dev --from-key hf_sk_old \\
+  # hookpipe managed → self-hosted (reverse migration)
+  $ hookpipe migrate \\
+      --from https://acme.hookpipe.dev --from-key hf_sk_old \\
       --to http://my-server.com --to-key hf_sk_new`)
   .action(async (opts) => {
     // 1. Export from source
-    const sourceClient = new HookflareClient({
+    const sourceClient = new HookpipeClient({
       apiUrl: opts.from,
       token: opts.fromKey,
     });
@@ -111,7 +111,7 @@ Examples:
     const exportData = exportRes.data;
 
     // 2. Import to target
-    const targetClient = new HookflareClient({
+    const targetClient = new HookpipeClient({
       apiUrl: opts.to,
       token: opts.toKey,
     });

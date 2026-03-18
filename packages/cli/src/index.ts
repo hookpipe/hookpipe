@@ -10,13 +10,13 @@ import { devCommand } from "./commands/dev.js";
 import { tailCommand } from "./commands/tail.js";
 import { providersCommand } from "./commands/providers.js";
 import { connectCommand } from "./commands/connect.js";
-import { HookflareClient } from "./client.js";
+import { HookpipeClient } from "./client.js";
 
 const program = new Command();
 
 program
-  .name("hookflare")
-  .description("CLI for hookflare — open-source webhook infrastructure")
+  .name("hookpipe")
+  .description("CLI for hookpipe — open-source webhook infrastructure")
   .version("0.0.5")
   .option("--json", "Output in JSON format (agent-friendly)")
   .hook("preAction", (thisCommand) => {
@@ -32,18 +32,18 @@ Agent-Friendly Features:
   schema [resource]   Discover API resources and fields at runtime
 
 Getting started (agent):
-  $ hookflare schema                            # discover all resources
-  $ hookflare schema sources                    # inspect source fields
-  $ hookflare health --json                     # check connectivity
+  $ hookpipe schema                            # discover all resources
+  $ hookpipe schema sources                    # inspect source fields
+  $ hookpipe health --json                     # check connectivity
 
 See AGENTS.md for the full agent guide.`);
 
 // Health check
 program
   .command("health")
-  .description("Check connection to hookflare server")
+  .description("Check connection to hookpipe server")
   .action(async () => {
-    const client = new HookflareClient();
+    const client = new HookpipeClient();
     const res = await client.health();
     console.log(JSON.stringify(res, null, 2));
   });

@@ -4,7 +4,7 @@ export type {
   Subscription,
   Event,
   Delivery,
-} from "@hookflare/shared";
+} from "@hookpipe/shared";
 
 // Worker-specific: Cloudflare bindings
 export interface Env {

@@ -22,14 +22,14 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Build shared
-        run: pnpm --filter @hookflare/shared build
+        run: pnpm --filter @hookpipe/shared build
       - name: Typecheck
-        run: pnpm --filter @hookflare/worker typecheck && pnpm --filter hookflare typecheck
+        run: pnpm --filter @hookpipe/worker typecheck && pnpm --filter hookpipe typecheck
       - name: Test
-        run: pnpm --filter @hookflare/worker test
+        run: pnpm --filter @hookpipe/worker test
 
   publish-cli:
-    name: Publish hookflare CLI
+    name: Publish hookpipe CLI
     needs: check
     runs-on: ubuntu-latest
     steps:
@@ -41,8 +41,8 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - run: pnpm install --frozen-lockfile
       - name: Build shared
-        run: pnpm --filter @hookflare/shared build
+        run: pnpm --filter @hookpipe/shared build
       - name: Build CLI
-        run: pnpm --filter hookflare build
+        run: pnpm --filter hookpipe build
       - run: npm publish --access public
         working-directory: packages/cli

@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a bug in hookflare
+about: Report a bug in hookpipe
 labels: bug
 ---
 
@@ -19,10 +19,10 @@ What you expected to happen.
 
 ## Environment
 
-- hookflare version:
+- hookpipe version:
 - Cloudflare Workers runtime: local (`wrangler dev`) / deployed
 - Node.js version:
-- CLI version (`hookflare --version`):
+- CLI version (`hookpipe --version`):
 
 ## Logs / Error output
 

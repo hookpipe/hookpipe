@@ -15,7 +15,7 @@ export type BuiltinVerifierType = "stripe-signature" | "slack-signature";
 
 export type VerificationConfig =
   | {
-      /** Built-in verifier handled by hookflare core */
+      /** Built-in verifier handled by hookpipe core */
       type: BuiltinVerifierType;
       header: string;
     }
@@ -119,14 +119,14 @@ export interface ProviderDefinition {
 // --- Resolved Provider (output of defineProvider) ---
 
 export interface Provider extends ProviderDefinition {
-  readonly _brand: "hookflare-provider";
+  readonly _brand: "hookpipe-provider";
 }
 
 /**
- * Define a hookflare provider.
+ * Define a hookpipe provider.
  *
  * ```typescript
- * import { defineProvider } from 'hookflare/provider';
+ * import { defineProvider } from 'hookpipe/provider';
  *
  * export default defineProvider({
  *   id: 'linear',
@@ -137,5 +137,5 @@ export interface Provider extends ProviderDefinition {
  * ```
  */
 export function defineProvider(def: ProviderDefinition): Provider {
-  return { ...def, _brand: "hookflare-provider" as const };
+  return { ...def, _brand: "hookpipe-provider" as const };
 }

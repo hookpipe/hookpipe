@@ -1,32 +1,32 @@
-# hookflare CLI — Agent Guide
+# hookpipe CLI — Agent Guide
 
-This file contains instructions for AI agents operating the hookflare CLI.
+This file contains instructions for AI agents operating the hookpipe CLI.
 
 ## First Steps
 
-1. Discover available providers: `hookflare providers ls`
-2. Inspect a provider's events: `hookflare providers describe stripe --json`
-3. Check connectivity: `hookflare health --json`
+1. Discover available providers: `hookpipe providers ls`
+2. Inspect a provider's events: `hookpipe providers describe stripe --json`
+3. Check connectivity: `hookpipe health --json`
 
 ## Authentication
 
 ```bash
-hookflare config set api_url http://localhost:8787
-hookflare config set token hf_sk_your_api_key
+hookpipe config set api_url http://localhost:8787
+hookpipe config set token hf_sk_your_api_key
 ```
 
 ## Rules
 
 - Always use `--json` flag for machine-readable output
 - Always use `--dry-run` before mutations to validate first
-- Always use `hookflare providers describe <name>` to discover events before connecting
-- Always use `hookflare connect` for simple setups (one source → one destination)
+- Always use `hookpipe providers describe <name>` to discover events before connecting
+- Always use `hookpipe connect` for simple setups (one source → one destination)
 - Use individual commands (`sources create`, `dest create`, `subs create`) for fan-out or advanced config
 - Never delete resources without confirming with the user first
 
 ## Key Facts
 
-- hookflare runs on Cloudflare Workers — zero servers, $0 idle cost
+- hookpipe runs on Cloudflare Workers — zero servers, $0 idle cost
 - Built-in providers: Stripe, GitHub, Slack, Shopify, Vercel
 - Retry strategies: `exponential` (default), `linear`, `fixed` — configurable per destination
 - Destinations can respond with `Retry-After` header to control retry timing
@@ -40,23 +40,23 @@ hookflare config set token hf_sk_your_api_key
 ### Local development tunnel
 
 ```bash
-hookflare dev --port <n> [--provider <name>] [--secret <s>] [--no-verify]
+hookpipe dev --port <n> [--provider <name>] [--secret <s>] [--no-verify]
 ```
 
 Creates a secure tunnel to localhost via Cloudflare Quick Tunnel. No port forwarding, no IP exposure. Verifies provider signatures locally before forwarding. Auto-downloads `cloudflared` if not installed.
 
 ```bash
 # Stripe with signature verification
-hookflare dev --port 3000 --provider stripe --secret whsec_xxx
+hookpipe dev --port 3000 --provider stripe --secret whsec_xxx
 
 # Any webhook, no verification
-hookflare dev --port 3000
+hookpipe dev --port 3000
 ```
 
 ### One-shot setup
 
 ```bash
-hookflare connect <provider> --secret <s> --to <url> [--events <filter>] [--name <n>] [--json] [--dry-run]
+hookpipe connect <provider> --secret <s> --to <url> [--events <filter>] [--name <n>] [--json] [--dry-run]
 ```
 
 Creates source + destination + subscription in one command. Output includes the webhook URL to register with the provider.
@@ -64,28 +64,28 @@ Creates source + destination + subscription in one command. Output includes the 
 ### Provider discovery
 
 ```bash
-hookflare providers ls [--json]
-hookflare providers describe <name> [--json]
+hookpipe providers ls [--json]
+hookpipe providers describe <name> [--json]
 ```
 
 ### Individual resources (advanced)
 
 ```bash
-hookflare sources create -d '{...}' [--json] [--dry-run]
-hookflare sources ls [--json] [--fields <f>]
-hookflare dest create -d '{...}' [--json] [--dry-run]
-hookflare dest ls [--json] [--fields <f>]
-hookflare subs create -d '{...}' [--json] [--dry-run]
-hookflare subs ls [--json]
+hookpipe sources create -d '{...}' [--json] [--dry-run]
+hookpipe sources ls [--json] [--fields <f>]
+hookpipe dest create -d '{...}' [--json] [--dry-run]
+hookpipe dest ls [--json] [--fields <f>]
+hookpipe subs create -d '{...}' [--json] [--dry-run]
+hookpipe subs ls [--json]
 ```
 
 ### Events and delivery
 
 ```bash
-hookflare events ls [--json] [--source <id>] [--limit <n>]
-hookflare events get <id> [--json]
-hookflare events replay <id>
-hookflare tail [--json] [--source <id>]    # real-time event stream
+hookpipe events ls [--json] [--source <id>] [--limit <n>]
+hookpipe events get <id> [--json]
+hookpipe events replay <id>
+hookpipe tail [--json] [--source <id>]    # real-time event stream
 ```
 
 ### DLQ notifications
@@ -115,21 +115,21 @@ Notification payload:
 ### System
 
 ```bash
-hookflare health [--json]
-hookflare schema <resource>
-hookflare export [-o <file>]
-hookflare import [-f <file>]
-hookflare migrate --from <url> --to <url>
+hookpipe health [--json]
+hookpipe schema <resource>
+hookpipe export [-o <file>]
+hookpipe import [-f <file>]
+hookpipe migrate --from <url> --to <url>
 ```
 
 ## Composing with Provider CLIs
 
-hookflare creates the webhook relay. Use the provider's own CLI to register the webhook URL.
+hookpipe creates the webhook relay. Use the provider's own CLI to register the webhook URL.
 The `--json` output includes `next_steps.cli` with structured args (not a shell string):
 
 ```bash
-# Generic pattern: hookflare connect → extract CLI command → execute
-RESULT=$(hookflare connect stripe --secret whsec_xxx --to https://... --json)
+# Generic pattern: hookpipe connect → extract CLI command → execute
+RESULT=$(hookpipe connect stripe --secret whsec_xxx --to https://... --json)
 WEBHOOK_URL=$(echo "$RESULT" | jq -r '.data.webhook_url')
 
 # The provider CLI command is in next_steps.cli (structured, not eval-able string)
@@ -140,21 +140,21 @@ BINARY=$(echo "$RESULT" | jq -r '.next_steps.cli.binary')
 ### Stripe + stripe CLI
 
 ```bash
-WEBHOOK_URL=$(hookflare connect stripe --secret whsec_xxx --to https://... --json | jq -r '.data.webhook_url')
+WEBHOOK_URL=$(hookpipe connect stripe --secret whsec_xxx --to https://... --json | jq -r '.data.webhook_url')
 stripe webhook_endpoints create --url "$WEBHOOK_URL"
 ```
 
 ### GitHub + gh CLI
 
 ```bash
-WEBHOOK_URL=$(hookflare connect github --secret ghsec_xxx --to https://... --json | jq -r '.data.webhook_url')
+WEBHOOK_URL=$(hookpipe connect github --secret ghsec_xxx --to https://... --json | jq -r '.data.webhook_url')
 gh api repos/OWNER/REPO/hooks -f url="$WEBHOOK_URL" -f content_type=json
 ```
 
 ### Slack (no CLI — dashboard only)
 
 ```bash
-hookflare connect slack --secret slack_xxx --to https://...
+hookpipe connect slack --secret slack_xxx --to https://...
 # Output includes: Dashboard: https://api.slack.com/apps
 # Agent should tell the user to paste the URL manually.
 ```
@@ -169,7 +169,7 @@ The provider has no CLI for webhook registration. Tell the user to configure it 
 
 ```bash
 # Start tunnel — webhooks from Stripe reach your localhost securely
-hookflare dev --port 3000 --provider stripe --secret whsec_xxx
+hookpipe dev --port 3000 --provider stripe --secret whsec_xxx
 
 # Output:
 # ✓ Tunnel established
@@ -186,10 +186,10 @@ No port forwarding, no IP exposure, no Cloudflare account needed. `cloudflared` 
 ### Connect Stripe in one command
 
 ```bash
-hookflare connect stripe --secret whsec_xxx --to https://api.example.com/hooks --events "payment_intent.*" --json
+hookpipe connect stripe --secret whsec_xxx --to https://api.example.com/hooks --events "payment_intent.*" --json
 # Output includes:
 # - source.id (src_abc123)
-# - source.webhook_url (https://your-hookflare.workers.dev/webhooks/src_abc123)
+# - source.webhook_url (https://your-hookpipe.workers.dev/webhooks/src_abc123)
 # - destination.id (dst_def456)
 # - subscription.id (sub_ghi789)
 # - next_steps.instruction ("Add the webhook_url in your Stripe Dashboard")
@@ -199,54 +199,54 @@ hookflare connect stripe --secret whsec_xxx --to https://api.example.com/hooks -
 
 ```bash
 # Step 1: Create Stripe source
-hookflare sources create --json -d '{"name":"stripe","provider":"stripe","verification":{"type":"stripe","secret":"whsec_xxx"}}'
+hookpipe sources create --json -d '{"name":"stripe","provider":"stripe","verification":{"type":"stripe","secret":"whsec_xxx"}}'
 # → src_abc123
 
 # Step 2: Create two destinations
-hookflare dest create --json -d '{"name":"my-api","url":"https://api.example.com/hooks"}'
+hookpipe dest create --json -d '{"name":"my-api","url":"https://api.example.com/hooks"}'
 # → dst_api
-hookflare dest create --json -d '{"name":"slack-alerts","url":"https://hooks.slack.com/services/xxx"}'
+hookpipe dest create --json -d '{"name":"slack-alerts","url":"https://hooks.slack.com/services/xxx"}'
 # → dst_slack
 
 # Step 3: Create two subscriptions
-hookflare subs create --json -d '{"source_id":"src_abc123","destination_id":"dst_api","event_types":["*"]}'
-hookflare subs create --json -d '{"source_id":"src_abc123","destination_id":"dst_slack","event_types":["payment_intent.payment_failed"]}'
+hookpipe subs create --json -d '{"source_id":"src_abc123","destination_id":"dst_api","event_types":["*"]}'
+hookpipe subs create --json -d '{"source_id":"src_abc123","destination_id":"dst_slack","event_types":["payment_intent.payment_failed"]}'
 ```
 
 ### Multiple environments (same provider, different secrets)
 
 ```bash
-hookflare connect stripe --secret whsec_prod --to https://api.myapp.com/hooks --name stripe-prod
-hookflare connect stripe --secret whsec_stg --to https://staging.myapp.com/hooks --name stripe-staging
+hookpipe connect stripe --secret whsec_prod --to https://api.myapp.com/hooks --name stripe-prod
+hookpipe connect stripe --secret whsec_stg --to https://staging.myapp.com/hooks --name stripe-staging
 ```
 
 ### Monitor delivery health
 
 ```bash
 # Circuit breaker state
-curl -H "Authorization: Bearer $TOKEN" https://your-hookflare/api/v1/destinations/dst_xxx/circuit
+curl -H "Authorization: Bearer $TOKEN" https://your-hookpipe/api/v1/destinations/dst_xxx/circuit
 
 # Failed deliveries (DLQ)
-curl -H "Authorization: Bearer $TOKEN" https://your-hookflare/api/v1/destinations/dst_xxx/failed
+curl -H "Authorization: Bearer $TOKEN" https://your-hookpipe/api/v1/destinations/dst_xxx/failed
 
 # Batch replay all failed
-curl -X POST -H "Authorization: Bearer $TOKEN" https://your-hookflare/api/v1/destinations/dst_xxx/replay-failed
+curl -X POST -H "Authorization: Bearer $TOKEN" https://your-hookpipe/api/v1/destinations/dst_xxx/replay-failed
 ```
 
 ### Troubleshooting
 
 ```bash
 # 1. Check sources exist
-hookflare sources ls --json --fields id,name,provider
+hookpipe sources ls --json --fields id,name,provider
 
 # 2. Check subscriptions
-hookflare subs ls --json
+hookpipe subs ls --json
 
 # 3. Check recent events
-hookflare events ls --json --limit 5
+hookpipe events ls --json --limit 5
 
 # 4. Check circuit breaker (if deliveries stopped)
-curl -H "Authorization: Bearer $TOKEN" https://your-hookflare/api/v1/destinations/dst_xxx/circuit
+curl -H "Authorization: Bearer $TOKEN" https://your-hookpipe/api/v1/destinations/dst_xxx/circuit
 
 # 5. Rate limited? Look for HTTP 429 on ingress
 ```
@@ -254,14 +254,14 @@ curl -H "Authorization: Bearer $TOKEN" https://your-hookflare/api/v1/destination
 ### Backup and restore
 
 ```bash
-hookflare export -o backup.json
-hookflare import -f backup.json
+hookpipe export -o backup.json
+hookpipe import -f backup.json
 ```
 
 ### Migrate between instances
 
 ```bash
-hookflare migrate --from http://old:8787 --from-key hf_sk_old --to http://new:8787 --to-key hf_sk_new
+hookpipe migrate --from http://old:8787 --from-key hf_sk_old --to http://new:8787 --to-key hf_sk_new
 ```
 
 ## Error Handling
@@ -300,7 +300,7 @@ CLI errors (stderr):
 | 400 | `BAD_REQUEST` | Invalid request | Fix input, do not retry |
 | 400 | `VALIDATION_ERROR` | Zod schema validation failed (`.details` has field-level errors) | Fix the specific field in `.details` |
 | 401 | `UNAUTHORIZED` | Invalid or missing API key | Check token in config |
-| 401 | `SETUP_REQUIRED` | No auth configured — call `POST /api/v1/bootstrap` or `hookflare init` | Run `hookflare init` |
+| 401 | `SETUP_REQUIRED` | No auth configured — call `POST /api/v1/bootstrap` or `hookpipe init` | Run `hookpipe init` |
 | 403 | `BOOTSTRAP_COMPLETED` | Bootstrap already done — instance has an admin key | Use existing key or set `API_TOKEN` env var |
 | 403 | `BOOTSTRAP_UNNECESSARY` | `API_TOKEN` env var is set — bootstrap not needed | Use the env var token |
 | 404 | `NOT_FOUND` | Resource does not exist | Check the ID |
@@ -314,14 +314,14 @@ CLI errors (stderr):
 
 | Command | Safe to retry? | Behavior on repeat |
 |---|---|---|
-| `hookflare init` | ✅ Yes | No-op if already bootstrapped |
-| `hookflare connect <provider>` | ⚠️ Partial | Creates duplicate if source name differs; skips if same name exists |
-| `hookflare sources create` | ❌ No | Creates duplicate (unique name constraint may reject) |
-| `hookflare dest create` | ❌ No | Creates duplicate (unique name constraint may reject) |
-| `hookflare subs create` | ❌ No | Unique(source_id, destination_id) constraint may reject |
-| `hookflare events replay` | ✅ Yes | Re-enqueues the event; delivery is deduplicated by destination |
-| `hookflare export` | ✅ Yes | Read-only |
-| `hookflare import` | ✅ Yes | Skips existing resources by name |
+| `hookpipe init` | ✅ Yes | No-op if already bootstrapped |
+| `hookpipe connect <provider>` | ⚠️ Partial | Creates duplicate if source name differs; skips if same name exists |
+| `hookpipe sources create` | ❌ No | Creates duplicate (unique name constraint may reject) |
+| `hookpipe dest create` | ❌ No | Creates duplicate (unique name constraint may reject) |
+| `hookpipe subs create` | ❌ No | Unique(source_id, destination_id) constraint may reject |
+| `hookpipe events replay` | ✅ Yes | Re-enqueues the event; delivery is deduplicated by destination |
+| `hookpipe export` | ✅ Yes | Read-only |
+| `hookpipe import` | ✅ Yes | Skips existing resources by name |
 
 ## Resource ID Format
 

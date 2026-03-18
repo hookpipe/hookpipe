@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { HookflareClient } from "../client.js";
+import { HookpipeClient } from "../client.js";
 import { isJsonMode } from "../output.js";
 
 interface TailEvent {
@@ -27,13 +27,13 @@ export const tailCommand = new Command("tail")
   .option("--json", "NDJSON output (one JSON object per line)")
   .addHelpText("after", `
 Examples:
-  $ hookflare tail                          # stream all events
-  $ hookflare tail --source src_xxx         # filter by source
-  $ hookflare tail --json | ./my-agent      # pipe to agent process
-  $ hookflare tail --limit 10              # stop after 10 events
-  $ hookflare tail --timeout 5m            # stop after 5 minutes`)
+  $ hookpipe tail                          # stream all events
+  $ hookpipe tail --source src_xxx         # filter by source
+  $ hookpipe tail --json | ./my-agent      # pipe to agent process
+  $ hookpipe tail --limit 10              # stop after 10 events
+  $ hookpipe tail --timeout 5m            # stop after 5 minutes`)
   .action(async (opts) => {
-    const client = new HookflareClient();
+    const client = new HookpipeClient();
     const jsonMode = opts.json || isJsonMode();
     const interval = parseInt(opts.interval, 10);
     const maxEvents = opts.limit ? parseInt(opts.limit, 10) : Infinity;

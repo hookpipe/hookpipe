@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import type { Env } from "../lib/types";
-import type { ExportData, ImportResult } from "@hookflare/shared";
+import type { ExportData, ImportResult } from "@hookpipe/shared";
 import { createDb } from "../db/queries";
 import * as db from "../db/queries";
 import { generateId } from "../lib/id";

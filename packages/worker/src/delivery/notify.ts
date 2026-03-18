@@ -1,7 +1,7 @@
 /**
  * DLQ notification — alerts when deliveries permanently fail.
  *
- * When an event exhausts all retries and enters the DLQ, hookflare can send
+ * When an event exhausts all retries and enters the DLQ, hookpipe can send
  * a notification webhook to a configured URL. This is a "meta-webhook" —
  * a webhook about your webhooks.
  *
@@ -49,7 +49,7 @@ export async function sendDlqNotification(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "User-Agent": "hookflare/dlq-notification",
+        "User-Agent": "hookpipe/dlq-notification",
       },
       body: JSON.stringify(payload),
     });

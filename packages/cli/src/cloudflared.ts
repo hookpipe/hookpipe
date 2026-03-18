@@ -3,13 +3,13 @@ import { join } from "node:path";
 import { homedir, platform, arch } from "node:os";
 import { execSync, spawn, type ChildProcess } from "node:child_process";
 
-const HOOKFLARE_DIR = join(homedir(), ".hookflare", "bin");
+const HOOKPIPE_DIR = join(homedir(), ".hookpipe", "bin");
 const BINARY_NAME = platform() === "win32" ? "cloudflared.exe" : "cloudflared";
-const LOCAL_PATH = join(HOOKFLARE_DIR, BINARY_NAME);
+const LOCAL_PATH = join(HOOKPIPE_DIR, BINARY_NAME);
 
 /**
  * Find or install cloudflared binary.
- * Priority: PATH → ~/.hookflare/bin → auto-download
+ * Priority: PATH → ~/.hookpipe/bin → auto-download
  */
 export async function ensureCloudflared(): Promise<string> {
   // 1. Check PATH
@@ -30,7 +30,7 @@ export async function ensureCloudflared(): Promise<string> {
 }
 
 async function downloadCloudflared(): Promise<void> {
-  mkdirSync(HOOKFLARE_DIR, { recursive: true });
+  mkdirSync(HOOKPIPE_DIR, { recursive: true });
 
   const os = platform();
   const cpu = arch();
@@ -41,7 +41,7 @@ async function downloadCloudflared(): Promise<void> {
   }
 
   if (url.endsWith(".tgz")) {
-    execSync(`curl -sL "${url}" | tar -xz -C "${HOOKFLARE_DIR}" cloudflared`, { stdio: "inherit" });
+    execSync(`curl -sL "${url}" | tar -xz -C "${HOOKPIPE_DIR}" cloudflared`, { stdio: "inherit" });
   } else {
     execSync(`curl -sL -o "${LOCAL_PATH}" "${url}"`, { stdio: "inherit" });
   }

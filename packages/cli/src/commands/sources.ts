@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { HookflareClient } from "../client.js";
+import { HookpipeClient } from "../client.js";
 import { output, outputTable, outputSuccess } from "../output.js";
 import { parseJsonData } from "../input.js";
 
@@ -12,7 +12,7 @@ sourcesCommand
   .description("List all sources")
   .option("--fields <fields>", "Comma-separated fields to include in output")
   .action(async (opts) => {
-    const client = new HookflareClient();
+    const client = new HookpipeClient();
     const res = await client.listSources();
     const sources = res.data as Record<string, unknown>[];
 
@@ -36,7 +36,7 @@ sourcesCommand
   .description("Get source details")
   .argument("<id>", "Source ID")
   .action(async (id: string) => {
-    const client = new HookflareClient();
+    const client = new HookpipeClient();
     const res = await client.getSource(id);
     output(res.data);
   });
@@ -52,13 +52,13 @@ sourcesCommand
   .addHelpText("after", `
 Examples:
   # Human-friendly flags
-  $ hookflare sources create --name stripe --verification-type hmac-sha256
+  $ hookpipe sources create --name stripe --verification-type hmac-sha256
 
   # Agent-friendly raw JSON
-  $ hookflare sources create -d '{"name":"stripe","verification":{"type":"hmac-sha256","secret":"whsec_..."}}'
+  $ hookpipe sources create -d '{"name":"stripe","verification":{"type":"hmac-sha256","secret":"whsec_..."}}'
 
   # Dry run (validate only)
-  $ hookflare sources create -d '{"name":"test"}' --dry-run`)
+  $ hookpipe sources create -d '{"name":"test"}' --dry-run`)
   .action(async (opts) => {
     const body = parseJsonData(opts.data) ?? {
       name: opts.name,
@@ -76,8 +76,8 @@ Examples:
       return;
     }
 
-    const client = new HookflareClient();
-    const res = await client.createSource(body as Parameters<HookflareClient["createSource"]>[0]);
+    const client = new HookpipeClient();
+    const res = await client.createSource(body as Parameters<HookpipeClient["createSource"]>[0]);
     output(res.data);
     outputSuccess("Source created");
   });
@@ -93,7 +93,7 @@ sourcesCommand
       output({ dry_run: true, would_delete: { type: "source", id } });
       return;
     }
-    const client = new HookflareClient();
+    const client = new HookpipeClient();
     await client.deleteSource(id);
     outputSuccess(`Source ${id} deleted`);
   });

@@ -1,15 +1,15 @@
-# hookflare Providers — Design Document
+# hookpipe Providers — Design Document
 
 ## What is a Provider?
 
-A provider is a **static, read-only knowledge module** about a webhook sender. It tells hookflare how to verify, parse, and understand webhooks from a specific service.
+A provider is a **static, read-only knowledge module** about a webhook sender. It tells hookpipe how to verify, parse, and understand webhooks from a specific service.
 
-Providers are to hookflare what providers are to Terraform — pluggable, typed, and community-extensible. The core engine doesn't need to know about Stripe or GitHub; the provider encapsulates that knowledge.
+Providers are to hookpipe what providers are to Terraform — pluggable, typed, and community-extensible. The core engine doesn't need to know about Stripe or GitHub; the provider encapsulates that knowledge.
 
 ## Design Principles
 
 - **Optional everything.** The minimum viable provider is `id`, `verification`, and `events`. Every other capability is opt-in.
-- **Knowledge, not behavior.** A provider describes *what* a service does, not *how* hookflare should process it. The core engine owns all processing logic.
+- **Knowledge, not behavior.** A provider describes *what* a service does, not *how* hookpipe should process it. The core engine owns all processing logic.
 - **One file, one provider.** Contributing a new provider should take minutes, not hours. No complex build steps, no framework boilerplate.
 - **Progressive capability.** Providers can start simple and gain capabilities over time without breaking changes.
 
@@ -25,14 +25,14 @@ Declare what credentials the provider requires. Most providers need a single sig
 
 ```typescript
 // Single secret (default — no need to declare explicitly)
-// hookflare connect stripe --secret whsec_xxx
+// hookpipe connect stripe --secret whsec_xxx
 
 // Multiple secrets
 secrets: {
   api_key: { description: 'API key for payload decryption' },
   api_iv: { description: 'Initialization vector for AES decryption' },
 }
-// hookflare connect my-psp --secret api_key=xxx --secret api_iv=yyy
+// hookpipe connect my-psp --secret api_key=xxx --secret api_iv=yyy
 
 // Certificate-based
 secrets: {
@@ -47,7 +47,7 @@ When `secrets` is not declared, the provider accepts a single `--secret` string 
 How to validate that an incoming webhook is authentic.
 
 ```typescript
-// Built-in verifiers (handled by hookflare core)
+// Built-in verifiers (handled by hookpipe core)
 verification: {
   type: 'stripe-signature',
   header: 'stripe-signature',
@@ -75,7 +75,7 @@ The `custom` type receives the full `secrets` object, enabling verification meth
 
 #### `decode` — Payload Decryption / Preprocessing
 
-Some providers send encrypted, signed, or encoded payloads that must be decoded before hookflare can read, store, or forward them. `decode` runs after `verify` and before everything else in the pipeline.
+Some providers send encrypted, signed, or encoded payloads that must be decoded before hookpipe can read, store, or forward them. `decode` runs after `verify` and before everything else in the pipeline.
 
 ```
 Pipeline with decode:
@@ -99,9 +99,9 @@ decode: async (secrets, body, headers) => {
 },
 ```
 
-When `decode` is not declared, hookflare treats the raw body as the payload (covers Stripe, GitHub, and any provider that sends plaintext JSON).
+When `decode` is not declared, hookpipe treats the raw body as the payload (covers Stripe, GitHub, and any provider that sends plaintext JSON).
 
-**This capability is what distinguishes hookflare from webhook tools that only support HMAC signatures.** It enables integration with payment gateways, enterprise systems, and regional providers that use encryption or signed tokens.
+**This capability is what distinguishes hookpipe from webhook tools that only support HMAC signatures.** It enables integration with payment gateways, enterprise systems, and regional providers that use encryption or signed tokens.
 
 #### `events` — Event Type Catalog
 
@@ -202,7 +202,7 @@ normalize: (body) => ({
 
 #### `idempotencyKey` — Deduplication Hint
 
-Tell hookflare which field uniquely identifies an event for deduplication.
+Tell hookpipe which field uniquely identifies an event for deduplication.
 
 ```typescript
 idempotencyKey: {
@@ -234,7 +234,7 @@ Format and send requests to the provider's API (outbound webhooks).
 ## Minimal Provider Example
 
 ```typescript
-import { defineProvider } from 'hookflare/provider';
+import { defineProvider } from 'hookpipe/provider';
 
 export default defineProvider({
   id: 'linear',
@@ -247,12 +247,12 @@ export default defineProvider({
 });
 ```
 
-Three fields. One file. Publishable to npm as `hookflare-provider-linear`.
+Three fields. One file. Publishable to npm as `hookpipe-provider-linear`.
 
 ## Full Provider Example (Plaintext — Stripe)
 
 ```typescript
-import { defineProvider } from 'hookflare/provider';
+import { defineProvider } from 'hookpipe/provider';
 import { z } from 'zod';
 
 export default defineProvider({
@@ -318,10 +318,10 @@ export default defineProvider({
 
 ## Full Provider Example (Encrypted / Signed — Apple App Store)
 
-Apple App Store Server Notifications v2 sends a JWS (JSON Web Signature) payload — the raw body is a signed JWT, not readable JSON. The provider must decode it before hookflare can process it.
+Apple App Store Server Notifications v2 sends a JWS (JSON Web Signature) payload — the raw body is a signed JWT, not readable JSON. The provider must decode it before hookpipe can process it.
 
 ```typescript
-import { defineProvider } from 'hookflare/provider';
+import { defineProvider } from 'hookpipe/provider';
 
 export default defineProvider({
   id: 'apple-app-store',
@@ -393,12 +393,12 @@ This example demonstrates the `secrets` + `decode` capabilities. The same patter
 - **Legacy systems** that use RSA signatures instead of HMAC shared secrets
 - **Regional payment processors** that use form-encoded encrypted fields rather than JSON
 
-The `decode` capability ensures hookflare is not limited to HMAC-signing providers. Any service that requires decryption, JWT decoding, or payload transformation before the data is usable can be supported through a provider.
+The `decode` capability ensures hookpipe is not limited to HMAC-signing providers. Any service that requires decryption, JWT decoding, or payload transformation before the data is usable can be supported through a provider.
 
 ## Package Structure
 
 ```
-hookflare/
+hookpipe/
 ├── packages/
 │   ├── providers/               # Built-in providers
 │   │   ├── DESIGN.md            # This file
@@ -418,9 +418,9 @@ hookflare/
 
 | Tier | Package naming | Maintained by | Example |
 |---|---|---|---|
-| **Built-in** | `hookflare/providers` | hookflare team | Stripe, GitHub, Slack |
-| **Official** | `@hookflare/provider-<name>` | hookedge org | Linear, Clerk |
-| **Community** | `hookflare-provider-<name>` | Anyone | Any service |
+| **Built-in** | `hookpipe/providers` | hookpipe team | Stripe, GitHub, Slack |
+| **Official** | `@hookpipe/provider-<name>` | hookpipe org | Linear, Clerk |
+| **Community** | `hookpipe-provider-<name>` | Anyone | Any service |
 
 Community providers can be promoted to Official when they are stable, tested, and actively maintained.
 
@@ -428,16 +428,16 @@ Community providers can be promoted to Official when they are stable, tested, an
 
 ```bash
 # Built-in — just works
-hookflare connect stripe --secret whsec_xxx --to https://...
+hookpipe connect stripe --secret whsec_xxx --to https://...
 
 # npm package (published)
-hookflare connect newebpay --provider hookflare-provider-newebpay --secret hash_key=xxx ...
+hookpipe connect newebpay --provider hookpipe-provider-newebpay --secret hash_key=xxx ...
 
 # GitHub repo (not published to npm — lowest barrier)
-hookflare connect newebpay --provider github:linyiru/hookflare-provider-newebpay --secret hash_key=xxx ...
+hookpipe connect newebpay --provider github:linyiru/hookpipe-provider-newebpay --secret hash_key=xxx ...
 
 # Local path (during development)
-hookflare connect newebpay --provider ./my-providers/newebpay --secret hash_key=xxx ...
+hookpipe connect newebpay --provider ./my-providers/newebpay --secret hash_key=xxx ...
 ```
 
 The `--provider` flag accepts three source types:
@@ -451,23 +451,23 @@ GitHub-based providers have the lowest contribution barrier: fork the template, 
 
 ```typescript
 // Built-in
-import { stripe } from 'hookflare/providers';
+import { stripe } from 'hookpipe/providers';
 
 // Official (separate package)
-import { linear } from '@hookflare/provider-linear';
+import { linear } from '@hookpipe/provider-linear';
 
 // Community (npm or GitHub)
-import { custom } from 'hookflare-provider-mycrm';
+import { custom } from 'hookpipe-provider-mycrm';
 ```
 
 ## Contributing a Provider
 
 ### Quickest path (< 10 minutes)
 
-1. Fork [`hookedge/hookflare-provider-template`](https://github.com/hookedge/hookflare-provider-template)
+1. Fork [`hookpipe/hookpipe-provider-template`](https://github.com/hookpipe/hookpipe-provider-template)
 2. Edit `src/index.ts` — fill in `id`, `verification`, `events`
 3. Push to GitHub
-4. Share: `hookflare connect my-service --provider github:yourname/hookflare-provider-my-service`
+4. Share: `hookpipe connect my-service --provider github:yourname/hookpipe-provider-my-service`
 
 No npm account, no publish step, no review process.
 
@@ -478,7 +478,7 @@ No npm account, no publish step, no review process.
 3. Add `decode` if the provider uses encrypted payloads
 4. Add `mock` generators if possible (greatly improves DX)
 5. Add tests
-6. Publish to npm as `hookflare-provider-<name>`
-7. Submit a PR to add your provider to the [community providers list](https://github.com/hookedge/hookflare#community-providers) in the README
+6. Publish to npm as `hookpipe-provider-<name>`
+7. Submit a PR to add your provider to the [community providers list](https://github.com/hookpipe/hookpipe#community-providers) in the README
 
 See the [minimal example](#minimal-provider-example) above — it's three fields and one file.

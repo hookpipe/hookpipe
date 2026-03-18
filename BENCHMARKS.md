@@ -1,6 +1,6 @@
 # Benchmarks
 
-Production benchmark results for hookflare running on Cloudflare Workers.
+Production benchmark results for hookpipe running on Cloudflare Workers.
 
 ## Environment
 
@@ -113,7 +113,7 @@ hey -n 500 -c 50 -m POST \
 
 ## Rate Limiting
 
-hookflare uses a two-layer rate limiter:
+hookpipe uses a two-layer rate limiter:
 
 1. **In-memory pre-check** (0ms) — fast rejection for requests clearly over the limit
 2. **RateLimiter Durable Object** (5-20ms) — precise, globally consistent counter per source

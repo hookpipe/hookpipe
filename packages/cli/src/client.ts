@@ -6,7 +6,7 @@ export interface ApiResponse<T = unknown> {
   error?: { message: string; code: string };
 }
 
-export class HookflareClient {
+export class HookpipeClient {
   private baseUrl: string;
   private token?: string;
 

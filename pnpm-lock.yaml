@@ -17,10 +17,10 @@ importers:
 
   packages/cli:
     dependencies:
-      '@hookflare/providers':
+      '@hookpipe/providers':
         specifier: workspace:*
         version: link:../providers
-      '@hookflare/shared':
+      '@hookpipe/shared':
         specifier: workspace:*
         version: link:../shared
       commander:
@@ -58,10 +58,10 @@ importers:
 
   packages/worker:
     dependencies:
-      '@hookflare/providers':
+      '@hookpipe/providers':
         specifier: workspace:*
         version: link:../providers
-      '@hookflare/shared':
+      '@hookpipe/shared':
         specifier: workspace:*
         version: link:../shared
       drizzle-orm:

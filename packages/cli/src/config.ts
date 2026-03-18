@@ -7,7 +7,7 @@ export interface Config {
   token?: string;
 }
 
-const CONFIG_DIR = join(homedir(), ".hookflare");
+const CONFIG_DIR = join(homedir(), ".hookpipe");
 const CONFIG_FILE = join(CONFIG_DIR, "config.json");
 
 const DEFAULT_CONFIG: Config = {

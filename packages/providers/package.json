@@ -1,5 +1,5 @@
 {
-  "name": "@hookflare/providers",
+  "name": "@hookpipe/providers",
   "version": "0.1.0",
   "private": true,
   "type": "module",

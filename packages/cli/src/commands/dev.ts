@@ -11,13 +11,13 @@ export const devCommand = new Command("dev")
   .addHelpText("after", `
 Examples:
   # Forward webhooks to localhost:3000 with Stripe verification
-  $ hookflare dev --port 3000 --provider stripe --secret whsec_xxx
+  $ hookpipe dev --port 3000 --provider stripe --secret whsec_xxx
 
   # Forward without verification (any source)
-  $ hookflare dev --port 3000
+  $ hookpipe dev --port 3000
 
   # GitHub webhooks
-  $ hookflare dev --port 3000 --provider github --secret ghsec_xxx
+  $ hookpipe dev --port 3000 --provider github --secret ghsec_xxx
 
 Paste the Webhook URL into your provider's dashboard.
 Press Ctrl+C to stop.`)

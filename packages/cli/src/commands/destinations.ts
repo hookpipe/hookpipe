@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { HookflareClient } from "../client.js";
+import { HookpipeClient } from "../client.js";
 import { output, outputTable, outputSuccess } from "../output.js";
 import { parseJsonData } from "../input.js";
 
@@ -13,7 +13,7 @@ destinationsCommand
   .description("List all destinations")
   .option("--fields <fields>", "Comma-separated fields to include in output")
   .action(async (opts) => {
-    const client = new HookflareClient();
+    const client = new HookpipeClient();
     const res = await client.listDestinations();
     const dests = res.data as Record<string, unknown>[];
 
@@ -38,7 +38,7 @@ destinationsCommand
   .description("Get destination details")
   .argument("<id>", "Destination ID")
   .action(async (id: string) => {
-    const client = new HookflareClient();
+    const client = new HookpipeClient();
     const res = await client.getDestination(id);
     output(res.data);
   });
@@ -54,9 +54,9 @@ destinationsCommand
   .option("--dry-run", "Validate input without creating the resource")
   .addHelpText("after", `
 Examples:
-  $ hookflare dest create --name my-app --url https://api.example.com/hooks
-  $ hookflare dest create -d '{"name":"my-app","url":"https://api.example.com/hooks","retry_policy":{"max_retries":3}}'
-  $ hookflare dest create -d '{"name":"test","url":"https://test.com"}' --dry-run`)
+  $ hookpipe dest create --name my-app --url https://api.example.com/hooks
+  $ hookpipe dest create -d '{"name":"my-app","url":"https://api.example.com/hooks","retry_policy":{"max_retries":3}}'
+  $ hookpipe dest create -d '{"name":"test","url":"https://test.com"}' --dry-run`)
   .action(async (opts) => {
     const body = parseJsonData(opts.data) ?? {
       name: opts.name,
@@ -75,8 +75,8 @@ Examples:
       return;
     }
 
-    const client = new HookflareClient();
-    const res = await client.createDestination(body as Parameters<HookflareClient["createDestination"]>[0]);
+    const client = new HookpipeClient();
+    const res = await client.createDestination(body as Parameters<HookpipeClient["createDestination"]>[0]);
     output(res.data);
     outputSuccess("Destination created");
   });
@@ -92,7 +92,7 @@ destinationsCommand
       output({ dry_run: true, would_delete: { type: "destination", id } });
       return;
     }
-    const client = new HookflareClient();
+    const client = new HookpipeClient();
     await client.deleteDestination(id);
     outputSuccess(`Destination ${id} deleted`);
   });

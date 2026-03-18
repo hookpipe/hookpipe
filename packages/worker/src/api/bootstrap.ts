@@ -84,7 +84,7 @@ app.post("/bootstrap", async (c) => {
         name: result.name,
         id: result.id,
       },
-      message: "Store this key securely — it will not be shown again. Configure your CLI: hookflare config set token " + result.key,
+      message: "Store this key securely — it will not be shown again. Configure your CLI: hookpipe config set token " + result.key,
     },
     201,
   );

@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { builtinProviders, type Provider, type EventDefinition } from "@hookflare/providers";
+import { builtinProviders, type Provider, type EventDefinition } from "@hookpipe/providers";
 import { output, outputTable, isJsonMode } from "../output.js";
 
 export const providersCommand = new Command("providers")

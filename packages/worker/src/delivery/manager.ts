@@ -72,10 +72,10 @@ export class DeliveryManager implements DurableObject {
       // Build outbound request
       const headers: Record<string, string> = {
         "Content-Type": task.headers["content-type"] ?? "application/json",
-        "User-Agent": "hookflare/0.1",
-        "X-Hookflare-Event-Id": task.eventId,
-        "X-Hookflare-Delivery-Id": task.deliveryId,
-        "X-Hookflare-Attempt": String(task.attempt),
+        "User-Agent": "hookpipe/0.1",
+        "X-Hookpipe-Event-Id": task.eventId,
+        "X-Hookpipe-Delivery-Id": task.deliveryId,
+        "X-Hookpipe-Attempt": String(task.attempt),
       };
 
       // Make the delivery request with timeout

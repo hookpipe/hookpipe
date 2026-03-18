@@ -8,7 +8,7 @@
  * extended at runtime for testing or custom providers.
  */
 
-import { builtinProviders, type Provider, type VerificationConfig } from "@hookflare/providers";
+import { builtinProviders, type Provider, type VerificationConfig } from "@hookpipe/providers";
 
 const registry = new Map<string, Provider>();
 

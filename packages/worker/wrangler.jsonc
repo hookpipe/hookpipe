@@ -1,5 +1,5 @@
 {
-  "name": "hookflare",
+  "name": "hookpipe",
   "main": "src/index.ts",
   "compatibility_date": "2025-03-14",
 
@@ -7,7 +7,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "hookflare-db",
+      "database_name": "hookpipe-db",
       "database_id": "YOUR_D1_DATABASE_ID",
       "migrations_dir": "migrations"
     }
@@ -18,15 +18,15 @@
     "producers": [
       {
         "binding": "WEBHOOK_QUEUE",
-        "queue": "hookflare-webhooks"
+        "queue": "hookpipe-webhooks"
       }
     ],
     "consumers": [
       {
-        "queue": "hookflare-webhooks",
+        "queue": "hookpipe-webhooks",
         "max_batch_size": 10,
         "max_retries": 3,
-        "dead_letter_queue": "hookflare-webhooks-dlq"
+        "dead_letter_queue": "hookpipe-webhooks-dlq"
       }
     ]
   },
@@ -43,7 +43,7 @@
   "r2_buckets": [
     {
       "binding": "PAYLOAD_BUCKET",
-      "bucket_name": "hookflare-payloads"
+      "bucket_name": "hookpipe-payloads"
     }
   ],
 

@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { HookflareClient } from "../client.js";
+import { HookpipeClient } from "../client.js";
 import { output, outputTable, outputSuccess } from "../output.js";
 import { tailCommand } from "./tail.js";
 
@@ -13,7 +13,7 @@ eventsCommand
   .option("--source <id>", "Filter by source ID")
   .option("--limit <n>", "Max results", "20")
   .action(async (opts) => {
-    const client = new HookflareClient();
+    const client = new HookpipeClient();
     const res = await client.listEvents({
       source_id: opts.source,
       limit: parseInt(opts.limit, 10),
@@ -34,7 +34,7 @@ eventsCommand
   .description("Get event details with payload")
   .argument("<id>", "Event ID")
   .action(async (id: string) => {
-    const client = new HookflareClient();
+    const client = new HookpipeClient();
     const res = await client.getEvent(id);
     output(res.data);
   });
@@ -44,7 +44,7 @@ eventsCommand
   .description("List delivery attempts for an event")
   .argument("<event_id>", "Event ID")
   .action(async (eventId: string) => {
-    const client = new HookflareClient();
+    const client = new HookpipeClient();
     const res = await client.getEventDeliveries(eventId);
     const deliveries = res.data as Record<string, unknown>[];
     outputTable(
@@ -59,7 +59,7 @@ eventsCommand
     );
   });
 
-// Alias: `hookflare events tail` → same as `hookflare tail`
+// Alias: `hookpipe events tail` → same as `hookpipe tail`
 eventsCommand.addCommand(tailCommand);
 
 eventsCommand
@@ -67,7 +67,7 @@ eventsCommand
   .description("Replay an event to its destinations")
   .argument("<id>", "Event ID")
   .action(async (id: string) => {
-    const client = new HookflareClient();
+    const client = new HookpipeClient();
     await client.replayEvent(id);
     outputSuccess(`Event ${id} replayed`);
   });

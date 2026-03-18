@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { HookflareClient } from "../client.js";
+import { HookpipeClient } from "../client.js";
 import { output, outputTable, outputSuccess } from "../output.js";
 import { parseJsonData } from "../input.js";
 
@@ -12,7 +12,7 @@ subscriptionsCommand
   .alias("ls")
   .description("List all subscriptions")
   .action(async () => {
-    const client = new HookflareClient();
+    const client = new HookpipeClient();
     const res = await client.listSubscriptions();
     const subs = res.data as Record<string, unknown>[];
     outputTable(
@@ -36,8 +36,8 @@ subscriptionsCommand
   .option("--dry-run", "Validate input without creating the resource")
   .addHelpText("after", `
 Examples:
-  $ hookflare subs create --source src_xxx --destination dst_yyy
-  $ hookflare subs create -d '{"source_id":"src_xxx","destination_id":"dst_yyy","event_types":["payment.*"]}'`)
+  $ hookpipe subs create --source src_xxx --destination dst_yyy
+  $ hookpipe subs create -d '{"source_id":"src_xxx","destination_id":"dst_yyy","event_types":["payment.*"]}'`)
   .action(async (opts) => {
     const body = parseJsonData(opts.data) ?? {
       source_id: opts.source,
@@ -53,8 +53,8 @@ Examples:
       return;
     }
 
-    const client = new HookflareClient();
-    const res = await client.createSubscription(body as Parameters<HookflareClient["createSubscription"]>[0]);
+    const client = new HookpipeClient();
+    const res = await client.createSubscription(body as Parameters<HookpipeClient["createSubscription"]>[0]);
     output(res.data);
     outputSuccess("Subscription created");
   });
@@ -70,7 +70,7 @@ subscriptionsCommand
       output({ dry_run: true, would_delete: { type: "subscription", id } });
       return;
     }
-    const client = new HookflareClient();
+    const client = new HookpipeClient();
     await client.deleteSubscription(id);
     outputSuccess(`Subscription ${id} deleted`);
   });

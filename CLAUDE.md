@@ -4,16 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-hookflare is an open-source webhook infrastructure service built entirely on the Cloudflare Workers ecosystem. It receives incoming webhooks, queues them durably, and reliably delivers them to configured destinations with retry logic. GitHub org: `hookedge`.
+hookpipe is an open-source webhook infrastructure service built entirely on the Cloudflare Workers ecosystem. It receives incoming webhooks, queues them durably, and reliably delivers them to configured destinations with retry logic. GitHub org: `hookpipe`.
 
 ## Monorepo Structure (pnpm + Turborepo)
 
 ```
-hookflare/
+hookpipe/
 ├── packages/
 │   ├── worker/        # Cloudflare Worker — webhook engine (Hono + D1 + Drizzle)
 │   ├── shared/        # Shared TypeScript types (API entities, export format)
-│   ├── cli/           # CLI tool (npm: hookflare) — agent-optimized
+│   ├── cli/           # CLI tool (npm: hookpipe) — agent-optimized
 │   └── providers/     # Built-in provider definitions (Stripe, GitHub, Slack, Shopify, Vercel)
 ├── turbo.json
 ├── pnpm-workspace.yaml
@@ -31,20 +31,20 @@ hookflare/
 - **Cache**: Cloudflare KV (idempotency keys only)
 - **State**: Cloudflare Durable Objects (DeliveryManager for retries, RateLimiter for rate limiting)
 - **Storage**: Cloudflare R2 (webhook payload archive)
-- **CLI**: Commander + tsup (published as `hookflare` on npm)
+- **CLI**: Commander + tsup (published as `hookpipe` on npm)
 
 ## Commands
 
 ```bash
 pnpm install                                    # Install all dependencies
-pnpm --filter @hookflare/shared build           # Build shared types (do this first)
-pnpm --filter @hookflare/providers build        # Build providers (do this second)
-pnpm --filter @hookflare/worker dev             # Start local dev server (wrangler dev)
-pnpm --filter @hookflare/worker test            # Run tests (vitest + Workers runtime)
-pnpm --filter @hookflare/worker typecheck       # TypeScript type checking
-pnpm --filter @hookflare/worker db:migrate:local # Run D1 migrations locally
-pnpm --filter hookflare build                   # Build CLI
-pnpm --filter hookflare typecheck               # Typecheck CLI
+pnpm --filter @hookpipe/shared build           # Build shared types (do this first)
+pnpm --filter @hookpipe/providers build        # Build providers (do this second)
+pnpm --filter @hookpipe/worker dev             # Start local dev server (wrangler dev)
+pnpm --filter @hookpipe/worker test            # Run tests (vitest + Workers runtime)
+pnpm --filter @hookpipe/worker typecheck       # TypeScript type checking
+pnpm --filter @hookpipe/worker db:migrate:local # Run D1 migrations locally
+pnpm --filter hookpipe build                   # Build CLI
+pnpm --filter hookpipe typecheck               # Typecheck CLI
 ```
 
 ## Architecture
@@ -118,12 +118,12 @@ A `provider` field on Source links to a provider definition. See `packages/provi
 ### CLI (packages/cli/)
 
 Agent-optimized CLI:
-- `hookflare connect <provider>` — one-shot setup (source + destination + subscription)
-- `hookflare providers ls/describe` — browse provider catalog and event types
-- `hookflare dev` — local development tunnel with signature verification
-- `hookflare tail` — real-time event and delivery streaming
-- `hookflare schema` — runtime API introspection
-- `hookflare export/import/migrate` — instance migration
+- `hookpipe connect <provider>` — one-shot setup (source + destination + subscription)
+- `hookpipe providers ls/describe` — browse provider catalog and event types
+- `hookpipe dev` — local development tunnel with signature verification
+- `hookpipe tail` — real-time event and delivery streaming
+- `hookpipe schema` — runtime API introspection
+- `hookpipe export/import/migrate` — instance migration
 - `--json`, `-d/--data`, `--dry-run`, `--fields` on all commands
 - See `packages/cli/AGENTS.md` for agent-specific guidance
 
@@ -148,7 +148,7 @@ Tests use `@cloudflare/vitest-pool-workers` and run inside the Workers runtime.
 
 ```bash
 # Run all tests
-pnpm --filter @hookflare/worker test
+pnpm --filter @hookpipe/worker test
 
 # Run specific test file
 npx vitest run test/api.test.ts

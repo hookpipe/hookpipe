@@ -1,6 +1,6 @@
 import { Command } from "commander";
-import { builtinProviders } from "@hookflare/providers";
-import { HookflareClient } from "../client.js";
+import { builtinProviders } from "@hookpipe/providers";
+import { HookpipeClient } from "../client.js";
 import { output, outputSuccess, outputError, isJsonMode } from "../output.js";
 import { loadConfig } from "../config.js";
 
@@ -18,20 +18,20 @@ export const connectCommand = new Command("connect")
   .addHelpText("after", `
 Examples:
   # Stripe → your API (payment events only)
-  $ hookflare connect stripe --secret whsec_xxx --to https://api.example.com/hooks --events "payment_intent.*"
+  $ hookpipe connect stripe --secret whsec_xxx --to https://api.example.com/hooks --events "payment_intent.*"
 
   # GitHub → your API (all events)
-  $ hookflare connect github --secret ghsec_xxx --to https://api.example.com/hooks
+  $ hookpipe connect github --secret ghsec_xxx --to https://api.example.com/hooks
 
   # Multiple environments
-  $ hookflare connect stripe --secret whsec_prod --to https://api.myapp.com/hooks --name stripe-prod
-  $ hookflare connect stripe --secret whsec_stg --to https://staging.myapp.com/hooks --name stripe-staging
+  $ hookpipe connect stripe --secret whsec_prod --to https://api.myapp.com/hooks --name stripe-prod
+  $ hookpipe connect stripe --secret whsec_stg --to https://staging.myapp.com/hooks --name stripe-staging
 
   # Dry run (validate without creating)
-  $ hookflare connect stripe --secret whsec_xxx --to https://api.example.com/hooks --dry-run
+  $ hookpipe connect stripe --secret whsec_xxx --to https://api.example.com/hooks --dry-run
 
   # Generic provider (no built-in knowledge)
-  $ hookflare connect my-service --secret my_secret --to https://api.example.com/hooks`)
+  $ hookpipe connect my-service --secret my_secret --to https://api.example.com/hooks`)
   .action(async (providerArg: string, opts) => {
     const provider = builtinProviders[providerArg] ?? null;
     const sourceName = opts.name ?? providerArg;
@@ -68,7 +68,7 @@ Examples:
       return;
     }
 
-    const client = new HookflareClient();
+    const client = new HookpipeClient();
 
     try {
       // 1. Create source

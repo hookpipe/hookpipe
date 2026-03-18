@@ -23,28 +23,28 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Build shared
-        run: pnpm --filter @hookflare/shared build
+        run: pnpm --filter @hookpipe/shared build
 
       - name: Build providers
-        run: pnpm --filter @hookflare/providers build
+        run: pnpm --filter @hookpipe/providers build
 
       - name: Typecheck
-        run: pnpm --filter @hookflare/worker typecheck && pnpm --filter hookflare typecheck
+        run: pnpm --filter @hookpipe/worker typecheck && pnpm --filter hookpipe typecheck
 
       - name: Unit tests (no D1)
-        run: pnpm --filter @hookflare/worker vitest run test/crypto.test.ts test/circuit-breaker.test.ts test/delivery.test.ts
+        run: pnpm --filter @hookpipe/worker vitest run test/crypto.test.ts test/circuit-breaker.test.ts test/delivery.test.ts
 
       - name: Integration tests — batch 1
-        run: pnpm --filter @hookflare/worker vitest run test/api.test.ts test/bootstrap.test.ts test/validation.test.ts
+        run: pnpm --filter @hookpipe/worker vitest run test/api.test.ts test/bootstrap.test.ts test/validation.test.ts
 
       - name: Integration tests — batch 2
-        run: pnpm --filter @hookflare/worker vitest run test/secret-masking.test.ts test/transfer.test.ts test/delivery-manager.test.ts
+        run: pnpm --filter @hookpipe/worker vitest run test/secret-masking.test.ts test/transfer.test.ts test/delivery-manager.test.ts
 
       - name: Integration tests — batch 3 (security)
-        run: pnpm --filter @hookflare/worker vitest run test/security.test.ts
+        run: pnpm --filter @hookpipe/worker vitest run test/security.test.ts
 
       - name: Build CLI
-        run: pnpm --filter hookflare build
+        run: pnpm --filter hookpipe build
 
       - name: Verify CLI runs
         run: node packages/cli/dist/index.js --version

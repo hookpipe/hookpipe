@@ -2,9 +2,9 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in hookflare, **please do not open a public issue.**
+If you discover a security vulnerability in hookpipe, **please do not open a public issue.**
 
-Report it privately via [GitHub Security Advisories](https://github.com/hookedge/hookflare/security/advisories/new).
+Report it privately via [GitHub Security Advisories](https://github.com/hookpipe/hookpipe/security/advisories/new).
 
 We will acknowledge your report within 48 hours and provide a fix timeline.
 

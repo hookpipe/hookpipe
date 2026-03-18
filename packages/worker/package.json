@@ -1,5 +1,5 @@
 {
-  "name": "@hookflare/worker",
+  "name": "@hookpipe/worker",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,12 +10,12 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
-    "db:migrate:local": "wrangler d1 migrations apply hookflare-db --local",
-    "db:migrate:remote": "wrangler d1 migrations apply hookflare-db --remote"
+    "db:migrate:local": "wrangler d1 migrations apply hookpipe-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply hookpipe-db --remote"
   },
   "dependencies": {
-    "@hookflare/providers": "workspace:*",
-    "@hookflare/shared": "workspace:*",
+    "@hookpipe/providers": "workspace:*",
+    "@hookpipe/shared": "workspace:*",
     "drizzle-orm": "^0.45.1",
     "hono": "^4.7.0",
     "zod": "^4.3.6"

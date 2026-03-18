@@ -72,7 +72,7 @@ export const createKeySchema = z.object({
 
 // --- Import ---
 
-// Import schema is lenient — accepts data from any hookflare version
+// Import schema is lenient — accepts data from any hookpipe version
 export const importDataSchema = z.object({
   version: z.literal("1"),
   exported_at: z.string().optional(),

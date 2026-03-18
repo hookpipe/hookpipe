@@ -15,10 +15,10 @@ Provider system, one-shot `connect` command, security hardening, performance opt
 ### Added
 
 - **Provider system** — `defineProvider()` framework with 5 built-in providers (Stripe, GitHub, Slack, Shopify, Vercel), event type catalogs, and community-extensible via npm or GitHub
-- **`hookflare connect`** — one-shot setup: source + destination + subscription in one command
-- **`hookflare providers ls/describe`** — browse and inspect provider capabilities at runtime
-- **`hookflare dev`** — local development tunnel via Cloudflare Quick Tunnel with provider-aware signature verification
-- **`hookflare tail`** — real-time event and delivery streaming (like `tail -f`)
+- **`hookpipe connect`** — one-shot setup: source + destination + subscription in one command
+- **`hookpipe providers ls/describe`** — browse and inspect provider capabilities at runtime
+- **`hookpipe dev`** — local development tunnel via Cloudflare Quick Tunnel with provider-aware signature verification
+- **`hookpipe tail`** — real-time event and delivery streaming (like `tail -f`)
 - **Bootstrap endpoint** — `POST /api/v1/bootstrap` creates first admin key on fresh deployment, self-locks after first use
 - **SSRF protection** — destination URLs validated against private IPs, localhost, metadata endpoints; HTTPS required by default
 - **Payload size limit** — 256KB max on webhook ingress, returns 413
@@ -27,8 +27,8 @@ Provider system, one-shot `connect` command, security hardening, performance opt
 - **Secret masking** — verification secrets masked in GET responses (`****xxxx`), full secret only on creation
 - **DO-based rate limiter** — precise global rate limiting per source via Durable Object, with in-memory pre-check
 - **`after` timestamp filter** — events and deliveries list endpoints support cursor-based pagination
-- **Homebrew tap** — `brew install hookedge/tap/hookflare`
-- **Agent skill** — `hookflare-webhooks` skill for the npx skills ecosystem
+- **Homebrew tap** — `brew install hookpipe/tap/hookpipe`
+- **Agent skill** — `hookpipe-webhooks` skill for the npx skills ecosystem
 - **SECURITY.md** — vulnerability reporting process, security design, known limitations
 - **CONTRIBUTING.md** — getting started guide, provider contribution path with ecosystem tiers
 - **BENCHMARKS.md** — production benchmark methodology and results
@@ -72,13 +72,13 @@ Initial release. Core webhook engine.
 - **REST API** — CRUD for sources, destinations, subscriptions, events, API keys
 - **API key authentication** — simple mode (`API_TOKEN` env var) + advanced mode (D1-managed keys with scopes)
 - **Export/Import/Migrate** — instance-to-instance migration with ID remapping
-- **CLI** (`npm: hookflare`) with agent-optimized features:
+- **CLI** (`npm: hookpipe`) with agent-optimized features:
   - `--json` structured output on all commands
   - `-d/--data` raw JSON input on create commands
   - `--dry-run` on all mutations
   - `--fields` on list commands
-  - `hookflare schema` runtime API introspection
-  - `hookflare export/import/migrate`
+  - `hookpipe schema` runtime API introspection
+  - `hookpipe export/import/migrate`
 - **`AGENTS.md`** — skill file for AI agent operators
 - **Idempotency** — KV-based deduplication with configurable TTL
 - **Payload archive** — R2 storage with configurable retention
@@ -87,6 +87,6 @@ Initial release. Core webhook engine.
 - **pnpm + Turborepo** monorepo
 - **Apache 2.0** license
 
-[Unreleased]: https://github.com/hookedge/hookflare/compare/v0.2.0-alpha...HEAD
-[0.2.0-alpha]: https://github.com/hookedge/hookflare/compare/v0.1.0-alpha...v0.2.0-alpha
-[0.1.0-alpha]: https://github.com/hookedge/hookflare/releases/tag/v0.1.0-alpha
+[Unreleased]: https://github.com/hookpipe/hookpipe/compare/v0.2.0-alpha...HEAD
+[0.2.0-alpha]: https://github.com/hookpipe/hookpipe/compare/v0.1.0-alpha...v0.2.0-alpha
+[0.1.0-alpha]: https://github.com/hookpipe/hookpipe/releases/tag/v0.1.0-alpha

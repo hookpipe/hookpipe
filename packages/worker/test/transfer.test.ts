@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { SELF } from "cloudflare:test";
 import { migrateDb, request, bootstrap } from "./helpers";
-import type { ExportData, ImportResult, Source, Destination, Subscription } from "@hookflare/shared";
+import type { ExportData, ImportResult, Source, Destination, Subscription } from "@hookpipe/shared";
 
 beforeEach(async () => {
   await migrateDb();
