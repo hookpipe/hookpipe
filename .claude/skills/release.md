@@ -49,37 +49,21 @@ Follow these steps exactly:
 7. **Monitor GitHub Actions**
    ```bash
    sleep 10
-   gh run list --repo hookpipe/hookpipe --limit 1
+   gh run list --repo hookpipe/hookpipe --limit 3
    ```
-   Report the workflow URL so the user can watch it.
+   Report the workflow URL. CI will automatically:
+   - Publish to npm via OIDC trusted publisher
+   - Update Homebrew formula in hookpipe/homebrew-hookpipe
 
-8. **Wait for npm publish, then verify**
+8. **Verify npm publish**
    ```bash
    sleep 90
    npm view hookpipe version
    ```
    Confirm version matches $ARGUMENTS.
 
-9. **Update Homebrew formula**
-   Get the new tarball SHA256 and update the formula:
+9. **Verify Homebrew** (after CI completes)
    ```bash
-   SHA256=$(curl -sL "https://registry.npmjs.org/hookpipe/-/hookpipe-$ARGUMENTS.tgz" | shasum -a 256 | cut -d' ' -f1)
+   brew update && brew info hookpipe/hookpipe/hookpipe
    ```
-   Edit `~/Projects/hookpipe/homebrew-hookpipe/Formula/hookpipe.rb`:
-   - Update `url` to `https://registry.npmjs.org/hookpipe/-/hookpipe-$ARGUMENTS.tgz`
-   - Update `sha256` to the value computed above
-
-10. **Commit and push Homebrew formula**
-    ```bash
-    cd ~/Projects/hookpipe/homebrew-hookpipe
-    git add Formula/hookpipe.rb
-    git commit -m "hookpipe $ARGUMENTS"
-    git push
-    ```
-
-11. **Verify Homebrew**
-    ```bash
-    brew update
-    brew info hookpipe/hookpipe/hookpipe
-    ```
-    Confirm version matches $ARGUMENTS.
+   Confirm version matches $ARGUMENTS.
