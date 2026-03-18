@@ -202,7 +202,7 @@ if (typeof event !== 'string' && event.schema) {
 | Provider | Events | Verification | Schema | Challenge |
 |----------|--------|-------------|--------|-----------|
 | Stripe   | 22     | stripe-signature | 3 events | — |
-| GitHub   | 18     | hmac-sha256 | — | — |
+| GitHub   | 18     | hmac-sha256 | 2 events | — |
 | Slack    | 10     | slack-signature | — | ✓ |
 | Shopify  | 17     | hmac-sha256 (base64) | — | — |
 | Vercel   | 9      | hmac-sha1 | — | — |

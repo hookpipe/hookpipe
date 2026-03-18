@@ -73,7 +73,7 @@ Object.entries(stripe.events)
 | Provider | Events | Verification | Schema | Challenge | Presets |
 |----------|--------|-------------|--------|-----------|---------|
 | Stripe   | 22     | stripe-signature | 3 events | — | 5 |
-| GitHub   | 18     | hmac-sha256 | — | — | 5 |
+| GitHub   | 18     | hmac-sha256 | 2 events | — | 5 |
 | Slack    | 10     | slack-signature | — | ✓ | 3 |
 | Shopify  | 17     | hmac-sha256 (base64) | — | — | 4 |
 | Vercel   | 9      | hmac-sha1 | — | — | 2 |
