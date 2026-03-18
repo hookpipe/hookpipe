@@ -1,9 +1,10 @@
 # @hookpipe/providers
 
-Typed webhook provider definitions — verify signatures, parse events,
-validate payloads, and browse event catalogs.
+Part of [hookpipe](https://github.com/hookpipe/hookpipe) — a free, open-source webhook gateway on Cloudflare Workers. This is the **knowledge layer**: it knows how providers sign webhooks, what events they send, and what those payloads look like.
 
-**Zero competitors offer payload schemas. hookpipe providers do.**
+Works standalone in any TypeScript project, or with the full hookpipe stack for automatic verification, reliable delivery, and retry management.
+
+No other open-source webhook gateway ships typed Zod schemas for provider payloads.
 
 ## Install
 
@@ -41,9 +42,10 @@ import { z } from 'zod';
 import { stripe } from '@hookpipe/providers';
 
 const def = stripe.events['payment_intent.succeeded'];
-const schema = typeof def !== 'string' ? def.schema! : undefined;
-type PaymentIntent = z.infer<typeof schema>;
-// → TypeScript infers the full payload type
+if (typeof def !== 'string' && def.schema) {
+  type PaymentIntent = z.infer<typeof def.schema>;
+  // → TypeScript infers the full payload type
+}
 ```
 
 ### Get verification config
@@ -150,6 +152,14 @@ This is a **knowledge-only** package. It tells you *what* to verify and
 - `EventCatalog`, `EventDefinition` — event type definitions (includes optional `schema`)
 - `ChallengeConfig` — challenge-response configuration
 - `MockGenerators`, `Presets`, `NextSteps`, `SecretDefinition`
+
+## Used by hookpipe CLI
+
+The [hookpipe CLI](https://www.npmjs.com/package/hookpipe) uses this package for provider-aware commands:
+
+- `hookpipe providers ls` — browse the event catalog
+- `hookpipe providers describe stripe` — inspect events, verification, and presets
+- `hookpipe connect stripe` — one-shot setup powered by provider knowledge
 
 ## License
 
