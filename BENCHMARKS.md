@@ -100,7 +100,7 @@ curl -X POST https://your-worker.workers.dev/api/v1/bootstrap \
 
 # Create a source
 curl -X POST https://your-worker.workers.dev/api/v1/sources \
-  -H "Authorization: Bearer hf_sk_xxx" \
+  -H "Authorization: Bearer hp_sk_xxx" \
   -H "Content-Type: application/json" \
   -d '{"name":"bench-source"}'
 

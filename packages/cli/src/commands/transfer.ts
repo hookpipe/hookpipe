@@ -36,7 +36,7 @@ Examples:
   $ cat backup.json | hookpipe import        # import from stdin
   $ hookpipe import -f backup.json \\
       --target https://acme.hookpipe.dev \\
-      --target-key hf_sk_xxx                  # import to a different instance
+      --target-key hp_sk_xxx                  # import to a different instance
 
 Behavior:
   - Existing resources (matched by name) are skipped, not overwritten
@@ -92,13 +92,13 @@ export const migrateCommand = new Command("migrate")
 Examples:
   # Self-hosted → hookpipe managed
   $ hookpipe migrate \\
-      --from http://localhost:8787 --from-key hf_sk_old \\
-      --to https://acme.hookpipe.dev --to-key hf_sk_new
+      --from http://localhost:8787 --from-key hp_sk_old \\
+      --to https://acme.hookpipe.dev --to-key hp_sk_new
 
   # hookpipe managed → self-hosted (reverse migration)
   $ hookpipe migrate \\
-      --from https://acme.hookpipe.dev --from-key hf_sk_old \\
-      --to http://my-server.com --to-key hf_sk_new`)
+      --from https://acme.hookpipe.dev --from-key hp_sk_old \\
+      --to http://my-server.com --to-key hp_sk_new`)
   .action(async (opts) => {
     // 1. Export from source
     const sourceClient = new HookpipeClient({

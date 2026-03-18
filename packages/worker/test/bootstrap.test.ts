@@ -38,7 +38,7 @@ describe("Bootstrap endpoint", () => {
       message: string;
     }>();
 
-    expect(body.data.key).toMatch(/^hf_sk_/);
+    expect(body.data.key).toMatch(/^hp_sk_/);
     expect(body.data.name).toBe("my-admin");
     expect(body.data.id).toMatch(/^key_/);
     expect(body.message).toContain("Store this key securely");
@@ -116,7 +116,7 @@ describe("Auth middleware — bootstrap mode", () => {
     // Try with wrong key
     const res = await SELF.fetch(
       request("/api/v1/sources", {
-        headers: { Authorization: "Bearer hf_sk_invalid" },
+        headers: { Authorization: "Bearer hp_sk_invalid" },
       }),
     );
     expect(res.status).toBe(401);

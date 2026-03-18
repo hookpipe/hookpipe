@@ -12,7 +12,7 @@ This file contains instructions for AI agents operating the hookpipe CLI.
 
 ```bash
 hookpipe config set api_url http://localhost:8787
-hookpipe config set token hf_sk_your_api_key
+hookpipe config set token hp_sk_your_api_key
 ```
 
 ## Rules
@@ -261,7 +261,7 @@ hookpipe import -f backup.json
 ### Migrate between instances
 
 ```bash
-hookpipe migrate --from http://old:8787 --from-key hf_sk_old --to http://new:8787 --to-key hf_sk_new
+hookpipe migrate --from http://old:8787 --from-key hp_sk_old --to http://new:8787 --to-key hp_sk_new
 ```
 
 ## Error Handling

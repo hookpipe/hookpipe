@@ -103,9 +103,9 @@ hookpipe config set api_url http://localhost:8787
 curl -X POST http://localhost:8787/api/v1/bootstrap \
   -H "Content-Type: application/json" \
   -d '{"name": "admin"}'
-# → Returns your API key (hf_sk_xxx). Store it securely — shown only once.
+# → Returns your API key (hp_sk_xxx). Store it securely — shown only once.
 
-hookpipe config set token hf_sk_xxx
+hookpipe config set token hp_sk_xxx
 
 # Connect Stripe in one command
 hookpipe connect stripe \

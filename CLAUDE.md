@@ -76,7 +76,7 @@ pnpm --filter hookpipe typecheck               # Typecheck CLI
 - `POST /api/v1/bootstrap` — unauthenticated, one-time, self-locks after first use
 - `/api/v1/*` — requires Bearer token
   - Simple mode: `API_TOKEN` env var
-  - Advanced mode: D1-managed API keys (`hf_sk_*` prefix, SHA-256 hashed)
+  - Advanced mode: D1-managed API keys (`hp_sk_*` prefix, SHA-256 hashed)
 - Bootstrap mode: if no auth configured, all `/api/v1/*` returns `SETUP_REQUIRED` except bootstrap
 
 ### Data Model (Drizzle schema at `packages/worker/src/db/schema.ts`)

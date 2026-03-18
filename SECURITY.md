@@ -27,7 +27,7 @@ We will acknowledge your report within 48 hours and provide a fix timeline.
 ### Secrets Handling
 
 - **Verification secrets** (e.g., Stripe `whsec_...`) are stored in D1. GET API responses return **masked values** (`****xxxx`, last 4 characters only). The full secret is returned only once at creation time. Export includes full secrets for migration.
-- **API keys** are stored as **SHA-256 hashes**. The raw key (`hf_sk_...`) is returned only once at creation time and cannot be retrieved afterward.
+- **API keys** are stored as **SHA-256 hashes**. The raw key (`hp_sk_...`) is returned only once at creation time and cannot be retrieved afterward.
 
 ### Data Storage
 

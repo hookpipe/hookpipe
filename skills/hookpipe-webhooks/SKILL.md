@@ -129,7 +129,7 @@ hookpipe connect stripe --secret whsec_stg --to https://staging.myapp.com/hooks 
 ```bash
 hookpipe export -o backup.json
 hookpipe import -f backup.json
-hookpipe migrate --from http://old:8787 --from-key hf_sk_old --to http://new:8787 --to-key hf_sk_new
+hookpipe migrate --from http://old:8787 --from-key hp_sk_old --to http://new:8787 --to-key hp_sk_new
 ```
 
 ## Key Facts

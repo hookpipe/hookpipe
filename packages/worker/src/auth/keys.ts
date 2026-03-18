@@ -3,11 +3,11 @@ import type { DB } from "../db/queries";
 import { apiKeys } from "../db/schema";
 import { generateId } from "../lib/id";
 
-const KEY_PREFIX = "hf_sk_";
+const KEY_PREFIX = "hp_sk_";
 
 /**
  * Generate a cryptographically secure API key.
- * Format: hf_sk_<40 random hex chars>
+ * Format: hp_sk_<40 random hex chars>
  * Returns { key, keyHash, keyPrefix } — key is only returned once.
  */
 export async function generateApiKey(): Promise<{
@@ -20,7 +20,7 @@ export async function generateApiKey(): Promise<{
   const hex = [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
   const key = `${KEY_PREFIX}${hex}`;
   const keyHash = await hashKey(key);
-  const keyPrefix = key.slice(0, 12); // "hf_sk_xxxx"
+  const keyPrefix = key.slice(0, 12); // "hp_sk_xxxx"
   return { key, keyHash, keyPrefix };
 }
 
