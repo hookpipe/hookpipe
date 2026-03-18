@@ -8,7 +8,7 @@ Providers are to hookpipe what providers are to Terraform — pluggable, typed, 
 
 ## Design Principles
 
-- **Optional everything.** The minimum viable provider is `id`, `verification`, and `events`. Every other capability is opt-in.
+- **Optional everything.** The minimum viable provider is `id`, `name`, `verification`, and `events`. Every other capability is opt-in.
 - **Knowledge, not behavior.** A provider describes *what* a service does, not *how* hookpipe should process it. The core engine owns all processing logic.
 - **One file, one provider.** Contributing a new provider should take minutes, not hours. No complex build steps, no framework boilerplate.
 - **Progressive capability.** Providers can start simple and gain capabilities over time without breaking changes.
@@ -105,7 +105,7 @@ When `decode` is not declared, hookpipe treats the raw body as the payload (cove
 
 #### `events` — Event Type Catalog
 
-The known event types this provider can send, with descriptions.
+The known event types this provider can send, with descriptions and optional Zod schemas for payload validation.
 
 ```typescript
 events: {
@@ -114,8 +114,18 @@ events: {
     description: 'Subscription cancelled',
     category: 'billing',
   },
+  'checkout.session.completed': {
+    description: 'Checkout session completed',
+    category: 'checkout',
+    schema: z.object({
+      id: z.string(),
+      payment_status: z.string(),
+    }).passthrough(),
+  },
 }
 ```
+
+Schemas are progressive — each event's `schema` field is optional and can be added incrementally.
 
 #### `parse` — Event Extraction
 
@@ -167,23 +177,6 @@ Use cases:
 - AI agent self-verification after setup
 - Demos and documentation
 
-#### `schema` — Payload Schemas
-
-Zod schemas for event payloads, enabling type-safe handlers and runtime validation.
-
-```typescript
-events: {
-  'payment_intent.succeeded': {
-    description: 'Payment completed',
-    schema: z.object({
-      id: z.string(),
-      amount: z.number(),
-      currency: z.string(),
-    }),
-  },
-}
-```
-
 ### V2 Capabilities
 
 #### `normalize` — Payload Normalization
@@ -234,7 +227,7 @@ Format and send requests to the provider's API (outbound webhooks).
 ## Minimal Provider Example
 
 ```typescript
-import { defineProvider } from 'hookpipe/provider';
+import { defineProvider } from '@hookpipe/providers/define';
 
 export default defineProvider({
   id: 'linear',
@@ -247,12 +240,12 @@ export default defineProvider({
 });
 ```
 
-Three fields. One file. Publishable to npm as `hookpipe-provider-linear`.
+Four fields. One file. Publishable to npm as `hookpipe-provider-linear`.
 
 ## Full Provider Example (Plaintext — Stripe)
 
 ```typescript
-import { defineProvider } from 'hookpipe/provider';
+import { defineProvider } from '@hookpipe/providers/define';
 import { z } from 'zod';
 
 export default defineProvider({
@@ -321,7 +314,7 @@ export default defineProvider({
 Apple App Store Server Notifications v2 sends a JWS (JSON Web Signature) payload — the raw body is a signed JWT, not readable JSON. The provider must decode it before hookpipe can process it.
 
 ```typescript
-import { defineProvider } from 'hookpipe/provider';
+import { defineProvider } from '@hookpipe/providers/define';
 
 export default defineProvider({
   id: 'apple-app-store',
@@ -409,7 +402,8 @@ hookpipe/
 │   │   │   ├── slack/index.ts
 │   │   │   ├── shopify/index.ts
 │   │   │   └── vercel/index.ts
-│   │   └── package.json
+│   │   ├── package.json
+│   │   └── README.md
 ```
 
 ## Provider Ecosystem
@@ -418,7 +412,7 @@ hookpipe/
 
 | Tier | Package naming | Maintained by | Example |
 |---|---|---|---|
-| **Built-in** | `hookpipe/providers` | hookpipe team | Stripe, GitHub, Slack |
+| **Built-in** | `@hookpipe/providers` | hookpipe team | Stripe, GitHub, Slack |
 | **Official** | `@hookpipe/provider-<name>` | hookpipe org | Linear, Clerk |
 | **Community** | `hookpipe-provider-<name>` | Anyone | Any service |
 
@@ -451,7 +445,7 @@ GitHub-based providers have the lowest contribution barrier: fork the template, 
 
 ```typescript
 // Built-in
-import { stripe } from 'hookpipe/providers';
+import { stripe } from '@hookpipe/providers';
 
 // Official (separate package)
 import { linear } from '@hookpipe/provider-linear';
@@ -481,4 +475,4 @@ No npm account, no publish step, no review process.
 6. Publish to npm as `hookpipe-provider-<name>`
 7. Submit a PR to add your provider to the [community providers list](https://github.com/hookpipe/hookpipe#community-providers) in the README
 
-See the [minimal example](#minimal-provider-example) above — it's three fields and one file.
+See the [minimal example](#minimal-provider-example) above — it's four fields and one file.
