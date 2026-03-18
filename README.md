@@ -434,8 +434,9 @@ Webhook ingestion, queue-based delivery, configurable retry strategies, circuit 
 
 - `hookpipe connect` one-shot command
 - `hookpipe providers ls/describe` catalog
-- Built-in Stripe, GitHub, Slack, Shopify, Vercel providers with event type catalogs
-- Community-extensible via `defineProvider()` — one file, three fields, publish to npm or GitHub
+- Built-in Stripe, GitHub, Slack, Shopify, Vercel providers with event type catalogs and Zod payload schemas
+- `@hookpipe/providers` published to npm as standalone package
+- Community-extensible via `defineProvider()` — one file, four fields, publish to npm or GitHub
 
 ### v0.3 — Observability (current)
 
@@ -454,6 +455,7 @@ Comprehensive test coverage, load testing results, security audit, stable API, s
 ```bash
 pnpm install
 pnpm --filter @hookpipe/shared build
+pnpm --filter @hookpipe/providers build
 pnpm --filter @hookpipe/worker dev       # Start local dev server
 pnpm --filter @hookpipe/worker test      # Run tests
 pnpm --filter @hookpipe/worker typecheck # Type check
@@ -488,7 +490,7 @@ hookpipe/
 │   │   └── test/            # Integration tests (vitest + Workers runtime)
 │   ├── shared/              # Shared TypeScript types
 │   ├── cli/                 # CLI tool (npm: hookpipe)
-│   └── providers/           # Provider definitions (🚧 in progress)
+│   └── providers/           # Provider definitions (npm: @hookpipe/providers)
 ├── .github/workflows/       # CI (typecheck + test)
 ├── turbo.json               # Turborepo task config
 ├── pnpm-workspace.yaml      # pnpm workspaces
