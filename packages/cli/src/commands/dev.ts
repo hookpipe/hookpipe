@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { builtinProviders } from "@hookpipe/providers";
 import { ensureCloudflared, startTunnel } from "../cloudflared.js";
 
 export const devCommand = new Command("dev")
@@ -185,26 +186,27 @@ async function verifySignature(
   headers: Record<string, string>,
 ): Promise<boolean> {
   try {
-    const headerMap: Record<string, string> = {
-      stripe: "stripe-signature",
-      github: "x-hub-signature-256",
-      slack: "x-slack-signature",
-      shopify: "x-shopify-hmac-sha256",
-      vercel: "x-vercel-signature",
-    };
+    const providerDef = builtinProviders[provider];
+    if (!providerDef) return true; // unknown provider, skip verification
 
-    const sigHeader = headerMap[provider];
-    if (!sigHeader) return true; // unknown provider, skip verification
+    const verification = providerDef.verification;
+
+    // Custom verification — not supported in dev mode
+    if ("type" in verification && verification.type === "custom") return true;
+
+    const sigHeader = verification.header;
     if (!headers[sigHeader]) return false;
 
-    // Dynamic import to avoid bundling crypto in non-dev scenarios
-    if (provider === "stripe") {
+    // Built-in verifiers with custom logic
+    if ("type" in verification && verification.type === "stripe-signature") {
       return verifyStripe(secret, body, headers[sigHeader]);
     }
 
-    // Generic HMAC-SHA256
+    // Generic HMAC verification using provider config
     const { createHmac } = await import("node:crypto");
-    const expected = createHmac("sha256", secret).update(body).digest("hex");
+    const algo = "algorithm" in verification && verification.algorithm === "hmac-sha1" ? "sha1" : "sha256";
+    const encoding = "encoding" in verification ? (verification.encoding ?? "hex") : "hex";
+    const expected = createHmac(algo, secret).update(body).digest(encoding as "hex" | "base64");
     const signature = headers[sigHeader].replace(/^(sha256|v0)=/, "");
     return expected === signature;
   } catch {
