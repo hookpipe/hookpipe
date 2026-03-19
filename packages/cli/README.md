@@ -115,6 +115,26 @@ Two tools with progressive disclosure:
 - **`hookpipe_schema`** — discover resources, fields, available operations
 - **`hookpipe_execute`** — execute any operation (`sources.list`, `events.get`, `providers.describe`, etc.)
 
+Example interaction (what the LLM sees):
+
+```
+LLM → hookpipe_schema({ resource: "events" })
+    ← { operations: ["events.list", "events.get", "events.replay"],
+         list_args: { source_id: "string", limit: "number", include_payload: "boolean" } }
+
+LLM → hookpipe_execute({ command: "events.list", args: { source_id: "src_stripe", limit: 3 } })
+    ← { data: [
+         { id: "evt_abc", event_type: "payment_intent.succeeded", received_at: "..." },
+         { id: "evt_def", event_type: "charge.refunded", received_at: "..." },
+         ...
+       ] }
+
+LLM → hookpipe_execute({ command: "events.replay", args: { id: "evt_abc" } })
+    ← { message: "Event replayed", event_id: "evt_abc" }
+```
+
+MCP handles request-response operations. For real-time event streaming, use `hp listen` instead.
+
 ### CLI Subprocess
 
 The discover → validate → execute pattern:
