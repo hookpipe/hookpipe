@@ -108,11 +108,12 @@ export class HookpipeClient {
   }
 
   // Events
-  listEvents(opts?: { source_id?: string; after?: string; limit?: number }) {
+  listEvents(opts?: { source_id?: string; after?: string; limit?: number; include_payload?: boolean }) {
     const params = new URLSearchParams();
     if (opts?.source_id) params.set("source_id", opts.source_id);
     if (opts?.after) params.set("after", opts.after);
     if (opts?.limit) params.set("limit", String(opts.limit));
+    if (opts?.include_payload) params.set("include_payload", "true");
     const qs = params.toString();
     return this.request("GET", `/api/v1/events${qs ? `?${qs}` : ""}`);
   }
