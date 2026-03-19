@@ -139,6 +139,30 @@ export class HookpipeClient {
     return this.request("POST", `/api/v1/events/${id}/replay`);
   }
 
+  // Consumers
+  listConsumers() {
+    return this.request("GET", "/api/v1/consumers");
+  }
+
+  createConsumer(body: { name: string; source_id?: string; event_types?: string[] }) {
+    return this.request("POST", "/api/v1/consumers", body);
+  }
+
+  deleteConsumer(id: string) {
+    return this.request("DELETE", `/api/v1/consumers/${id}`);
+  }
+
+  pollConsumer(id: string, opts?: { limit?: number }) {
+    const params = new URLSearchParams();
+    if (opts?.limit) params.set("limit", String(opts.limit));
+    const qs = params.toString();
+    return this.request("GET", `/api/v1/consumers/${id}/poll${qs ? `?${qs}` : ""}`);
+  }
+
+  ackConsumer(id: string, body: { event_id?: string; through?: string }) {
+    return this.request("POST", `/api/v1/consumers/${id}/ack`, body);
+  }
+
   // Transfer (export/import)
   exportConfig() {
     return this.request("GET", "/api/v1/export");
