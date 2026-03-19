@@ -13,6 +13,12 @@ export type {
   SecretDefinition,
 } from "./define";
 
+// Verification & handling
+export { createVerifier } from "./verifier";
+export type { VerifyFn, VerifierOptions } from "./verifier";
+export { createHandler } from "./handler";
+export type { Handler, HandlerResult } from "./handler";
+
 // Built-in providers
 export { stripe } from "./stripe/index";
 export { github } from "./github/index";
