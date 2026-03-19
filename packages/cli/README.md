@@ -265,11 +265,30 @@ Custom verification schemes (e.g. HASH IV/KEY for Taiwan payment gateways) are s
 
 </details>
 
+## Build a Provider
+
+Add support for any webhook sender in one file:
+
+```typescript
+import { defineProvider } from '@hookpipe/providers/define';
+
+export default defineProvider({
+  id: 'linear',
+  name: 'Linear',
+  verification: { header: 'linear-signature', algorithm: 'hmac-sha256' },
+  events: { 'Issue.create': 'New issue created', 'Issue.update': 'Issue updated' },
+});
+```
+
+See the [Provider Design Guide](https://github.com/hookpipe/hookpipe/blob/main/packages/providers/DESIGN.md) for the full specification and the [provider template](https://github.com/hookpipe/hookpipe-provider-template) to get started.
+
 ## Links
 
 - [GitHub](https://github.com/hookpipe/hookpipe) — source code, architecture, benchmarks
 - [`@hookpipe/providers`](https://www.npmjs.com/package/@hookpipe/providers) — standalone webhook SDK with `createVerifier()`, `createHandler()`, and 530+ event types
 - [Agent Guide](https://github.com/hookpipe/hookpipe/blob/main/packages/cli/AGENTS.md) — error codes, ID formats, idempotency, workflow recipes
+- [Contributing](https://github.com/hookpipe/hookpipe/blob/main/CONTRIBUTING.md) — development setup, how to build a provider
+- [Security](https://github.com/hookpipe/hookpipe/blob/main/SECURITY.md) — vulnerability reporting policy
 
 ## Get Started in 30 Seconds
 
