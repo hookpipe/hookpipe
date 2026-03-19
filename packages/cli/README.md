@@ -76,6 +76,11 @@ hookpipe forwards the original payload to your destination URL as an HTTP POST. 
 ```typescript
 // Express / Hono / any framework
 app.post('/webhooks', (req, res) => {
+  // hookpipe already verified the provider signature before forwarding.
+  // If you also want to verify directly (e.g., without hookpipe):
+  //   import { stripe, createVerifier } from '@hookpipe/providers';
+  //   const verify = createVerifier(stripe, { secret: 'whsec_xxx' });
+
   // hookpipe headers
   const eventId    = req.headers['x-hookpipe-event-id'];    // "evt_abc123"
   const deliveryId = req.headers['x-hookpipe-delivery-id']; // "dlv_def456"
@@ -91,6 +96,8 @@ app.post('/webhooks', (req, res) => {
 ```
 
 Your handler should be idempotent — hookpipe guarantees at-least-once delivery, so the same event may arrive more than once. Use `x-hookpipe-event-id` for deduplication.
+
+**Not using the hookpipe gateway?** Use [`createVerifier()`](#sdk--hookpipeproviders) to verify signatures directly in your own app — same API, any runtime.
 
 ## Agent Integration
 
