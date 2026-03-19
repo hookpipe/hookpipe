@@ -11,6 +11,7 @@ import { tailCommand } from "./commands/tail.js";
 import { providersCommand } from "./commands/providers.js";
 import { connectCommand } from "./commands/connect.js";
 import { mcpCommand } from "./commands/mcp.js";
+import { listenCommand } from "./commands/listen.js";
 import { HookpipeClient } from "./client.js";
 
 const program = new Command();
@@ -174,6 +175,7 @@ program.addCommand(devCommand);
 program.addCommand(tailCommand);
 program.addCommand(providersCommand);
 program.addCommand(mcpCommand);
+program.addCommand(listenCommand);
 
 // Global error handler
 program.exitOverride();
