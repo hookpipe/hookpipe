@@ -6,6 +6,7 @@ import { createDb } from "../db/queries";
 import * as db from "../db/queries";
 import { generateId } from "../lib/id";
 import { parseBody, importDataSchema } from "../lib/validation";
+import { validateDestinationUrl } from "../lib/url-validation";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -85,6 +86,13 @@ app.post("/import", async (c) => {
     if (existingDestNames.has(dst.name)) {
       const existing = existingDests.find((d) => d.name === dst.name)!;
       destIdMap.set(dst.id, existing.id);
+      result.destinations.skipped++;
+      continue;
+    }
+
+    // SSRF protection: validate destination URL before import
+    const urlError = validateDestinationUrl(dst.url);
+    if (urlError) {
       result.destinations.skipped++;
       continue;
     }
