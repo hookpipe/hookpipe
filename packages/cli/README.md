@@ -48,6 +48,25 @@ hookpipe tail --payload
 
 For production deployment, see the [deployment guide on GitHub](https://github.com/hookpipe/hookpipe#quick-start).
 
+## What It Looks Like
+
+```
+$ hp connect stripe --secret whsec_test --to https://api.myapp.com/hooks
+
+✓ Connected stripe → https://api.myapp.com/hooks
+  Webhook URL: https://your-hookpipe.workers.dev/webhooks/src_a1b2c3
+
+$ hp tail --payload --source src_a1b2c3
+
+[10:00:01] evt_f7e8d9 ← src_a1b2c3  payment_intent.succeeded
+         {"id":"pi_3xyz","amount":4999,"currency":"usd","status":"succeeded"}
+[10:00:01] evt_f7e8d9 → dst_c4d5e6  ✓ 200 (45ms)
+[10:02:15] evt_a1b2c3 ← src_a1b2c3  charge.refunded
+         {"id":"ch_1abc","amount_refunded":4999,"currency":"usd"}
+[10:02:15] evt_a1b2c3 → dst_c4d5e6  ✗ 503 (2100ms) — retrying in 60s
+[10:03:16] evt_a1b2c3 → dst_c4d5e6  ✓ 200 (38ms) attempt 2
+```
+
 ## Your Webhook Handler
 
 hookpipe forwards the original payload to your destination URL as an HTTP POST. Your handler receives the same body the provider sent, plus hookpipe headers:
