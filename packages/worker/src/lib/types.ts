@@ -29,7 +29,7 @@ export interface QueueMessage {
   eventId: string;
   sourceId: string;
   eventType: string | null;
-  payload: string;           // raw webhook body (moved from R2 to queue)
+  payloadR2Key: string;      // R2 key where payload is archived (written by ingress)
   headers: Record<string, string>;
   idempotencyKey: string | null;
   receivedAt: string;

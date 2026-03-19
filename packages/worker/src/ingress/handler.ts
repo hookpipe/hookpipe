@@ -2,12 +2,9 @@ import type { Context } from "hono";
 import type { Env, QueueMessage } from "../lib/types";
 import { generateId } from "../lib/id";
 import { createDb, getSource } from "../db/queries";
-import { verifyWebhookSignature } from "../lib/crypto";
-import type { VerificationType } from "../lib/crypto";
 import { ApiError } from "../lib/errors";
 import {
-  resolveSignatureHeader,
-  resolveVerificationType,
+  createSourceVerifier,
   parseEventType,
   handleChallenge,
 } from "../providers/registry";
@@ -21,12 +18,13 @@ const SOURCE_CACHE_TTL_MS = 60_000; // 1 minute
 /**
  * POST /webhooks/:source_id
  *
- * Optimized critical path — only 3 blocking I/O operations:
+ * Critical path — 4 blocking I/O operations:
  * 1. Source lookup (cached in memory)
  * 2. Idempotency check (KV read)
- * 3. Queue send (+ KV write in parallel)
+ * 3. R2 payload archive (decouples payload size from queue message limit)
+ * 4. Queue send (+ KV write in parallel)
  *
- * Heavy I/O (R2 write, D1 write) is deferred to the queue consumer.
+ * D1 event record is deferred to the queue consumer.
  */
 export async function handleWebhookIngress(c: Context<{ Bindings: Env }>) {
   const sourceId = c.req.param("source_id")!;
@@ -58,26 +56,15 @@ export async function handleWebhookIngress(c: Context<{ Bindings: Env }>) {
     return c.json(challengeResponse, 200);
   }
 
-  // 3. Verify signature
-  if (source.verification_type || source.verification_secret) {
-    const signatureHeader = resolveSignatureHeader(
-      provider,
-      source.verification_type,
-      c.req.header.bind(c.req),
-    );
+  // 3. Verify signature (powered by @hookpipe/providers)
+  const verifier = createSourceVerifier(source);
+  if (verifier) {
+    const reqHeaders: Record<string, string> = {};
+    c.req.raw.headers.forEach((value, key) => {
+      reqHeaders[key] = value;
+    });
 
-    if (!signatureHeader) {
-      throw new ApiError(401, "Missing webhook signature", "MISSING_SIGNATURE");
-    }
-
-    const vType = resolveVerificationType(provider, source.verification_type);
-    const valid = await verifyWebhookSignature(
-      (vType ?? "hmac-sha256") as VerificationType,
-      source.verification_secret!,
-      body,
-      signatureHeader,
-    );
-
+    const valid = await verifier(body, reqHeaders);
     if (!valid) {
       throw new ApiError(401, "Invalid webhook signature", "INVALID_SIGNATURE");
     }
@@ -105,14 +92,19 @@ export async function handleWebhookIngress(c: Context<{ Bindings: Env }>) {
   }
   const eventType = parseEventType(provider, body, headers);
 
-  // 6. Enqueue — this is the only write on the critical path
-  //    R2 archive + D1 event record happen in the queue consumer
+  // 6. Archive payload to R2 (decouples payload size from 128KB queue message limit)
   const eventId = generateId("evt");
+  const r2Key = `${sourceId}/${eventId}`;
+  await env.PAYLOAD_BUCKET.put(r2Key, body, {
+    httpMetadata: { contentType: headers["content-type"] ?? "application/octet-stream" },
+  });
+
+  // 7. Enqueue — queue message carries only metadata + R2 key (no raw payload)
   const queueMessage: QueueMessage = {
     eventId,
     sourceId,
     eventType,
-    payload: body,
+    payloadR2Key: r2Key,
     headers,
     idempotencyKey: idempotencyKey ?? null,
     receivedAt: new Date().toISOString(),

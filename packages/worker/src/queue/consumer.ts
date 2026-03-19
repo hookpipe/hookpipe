@@ -5,11 +5,11 @@ import { createDb, getSubscriptionsBySource, getDestination, createDelivery, cre
 /**
  * Queue consumer: processes ingested webhook events.
  *
- * Responsibilities moved here from ingress for performance:
- * 1. Archive payload to R2
- * 2. Record event in D1
- * 3. Resolve subscriptions and dispatch to Delivery DOs
+ * Payload is already archived to R2 by ingress. This consumer:
+ * 1. Records the event in D1
+ * 2. Resolves subscriptions and dispatches to Delivery DOs
  */
+
 export async function handleQueueBatch(
   batch: MessageBatch<QueueMessage>,
   env: Env,
@@ -28,21 +28,15 @@ export async function handleQueueBatch(
 async function processMessage(msg: QueueMessage, env: Env): Promise<void> {
   const db = createDb(env.DB);
 
-  // 1. Archive payload to R2 + record event in D1 (parallel)
-  const r2Key = `${msg.sourceId}/${msg.eventId}`;
-  await Promise.all([
-    env.PAYLOAD_BUCKET.put(r2Key, msg.payload, {
-      httpMetadata: { contentType: msg.headers["content-type"] ?? "application/octet-stream" },
-    }),
-    createEvent(db, {
-      id: msg.eventId,
-      source_id: msg.sourceId,
-      event_type: msg.eventType,
-      idempotency_key: msg.idempotencyKey,
-      payload_r2_key: r2Key,
-      headers: JSON.stringify(msg.headers),
-    }),
-  ]);
+  // 1. Record event in D1 (payload already archived to R2 by ingress)
+  await createEvent(db, {
+    id: msg.eventId,
+    source_id: msg.sourceId,
+    event_type: msg.eventType,
+    idempotency_key: msg.idempotencyKey,
+    payload_r2_key: msg.payloadR2Key,
+    headers: JSON.stringify(msg.headers),
+  });
 
   // 2. Find all active subscriptions for this source
   const subscriptions = await getSubscriptionsBySource(db, msg.sourceId);
@@ -71,7 +65,7 @@ async function processMessage(msg: QueueMessage, env: Env): Promise<void> {
       eventId: msg.eventId,
       destinationId: dest.id,
       destinationUrl: dest.url,
-      payloadR2Key: r2Key,
+      payloadR2Key: msg.payloadR2Key,
       headers: msg.headers,
       attempt: 1,
       maxRetries: dest.max_retries,
