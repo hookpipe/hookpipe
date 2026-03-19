@@ -47,6 +47,29 @@ hookpipe tail --payload
 
 For production deployment, see the [deployment guide on GitHub](https://github.com/hookpipe/hookpipe#quick-start).
 
+## Your Webhook Handler
+
+hookpipe forwards the original payload to your destination URL as an HTTP POST. Your handler receives the same body the provider sent, plus hookpipe headers:
+
+```typescript
+// Express / Hono / any framework
+app.post('/webhooks', (req, res) => {
+  // hookpipe headers
+  const eventId    = req.headers['x-hookpipe-event-id'];    // "evt_abc123"
+  const deliveryId = req.headers['x-hookpipe-delivery-id']; // "dlv_def456"
+  const attempt    = req.headers['x-hookpipe-attempt'];      // "1"
+
+  // Original provider payload (JSON body as-is)
+  const { type, data } = req.body;
+  console.log(`${type}: ${data.object.id}`);
+
+  // Return 2xx to acknowledge. Any non-2xx triggers retry.
+  res.status(200).json({ received: true });
+});
+```
+
+Your handler should be idempotent — hookpipe guarantees at-least-once delivery, so the same event may arrive more than once. Use `x-hookpipe-event-id` for deduplication.
+
 ## Agent Integration
 
 hookpipe is designed for AI agents. Three integration paths, pick what fits your architecture:
