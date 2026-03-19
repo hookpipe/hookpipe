@@ -135,6 +135,19 @@ hookpipe connect stripe \
 
 One command creates source, destination, and subscription. Paste the Webhook URL into your provider's dashboard.
 
+### Handle the Webhook
+
+hookpipe forwards the original payload to your URL with hookpipe headers added:
+
+```typescript
+app.post('/webhooks', (req, res) => {
+  const eventId = req.headers['x-hookpipe-event-id'];  // for deduplication
+  const { type, data } = req.body;                      // original provider payload
+  // Return 2xx to acknowledge. Non-2xx triggers retry.
+  res.status(200).json({ received: true });
+});
+```
+
 ### Monitor & Consume
 
 ```bash
