@@ -2,13 +2,19 @@
  * Provider registry.
  *
  * Maps provider IDs to their definitions. Used by the ingress handler
- * to resolve verification config, event parsing, and challenge handling.
+ * to resolve verification, event parsing, and challenge handling.
  *
  * Built-in providers are imported at build time. The registry can be
  * extended at runtime for testing or custom providers.
  */
 
-import { builtinProviders, type Provider, type VerificationConfig } from "@hookpipe/providers";
+import {
+  builtinProviders,
+  defineProvider,
+  createVerifier,
+  type Provider,
+  type VerifyFn,
+} from "@hookpipe/providers";
 
 const registry = new Map<string, Provider>();
 
@@ -30,58 +36,35 @@ export function hasProvider(id: string): boolean {
 }
 
 /**
- * Resolve the signature header name for a provider or verification type.
+ * Create a verifier for a source, using @hookpipe/providers as the verification engine.
  *
- * Priority:
- * 1. If source has a provider → use provider's verification.header
- * 2. If source has a verification_type → use legacy mapping
- * 3. Fall back to common webhook signature headers
+ * - Provider-based sources: uses the provider's verification config directly.
+ * - Legacy sources (no provider): builds a minimal anonymous provider from verification_type.
+ *
+ * Returns null if the source has no verification configured.
  */
-export function resolveSignatureHeader(
-  provider: string | null,
-  verificationType: string | null,
-  getHeader: (name: string) => string | undefined,
-): string | null {
-  // 1. Provider-based resolution
-  if (provider) {
-    const p = getProvider(provider);
-    if (p) {
-      const header = getVerificationHeader(p.verification);
-      if (header) return getHeader(header) ?? null;
-    }
+export function createSourceVerifier(source: {
+  provider: string | null;
+  verification_type: string | null;
+  verification_secret: string | null;
+}): VerifyFn | null {
+  if (!source.verification_secret) return null;
+
+  // Provider-based source — use provider definition directly
+  if (source.provider) {
+    const p = getProvider(source.provider);
+    if (p) return createVerifier(p, { secret: source.verification_secret });
   }
 
-  // 2. Legacy verification_type resolution
-  switch (verificationType) {
-    case "stripe":
-      return getHeader("stripe-signature") ?? null;
-    case "slack":
-      return getHeader("x-slack-signature") ?? null;
-    case "hmac-sha256":
-      return getHeader("x-hub-signature-256") ?? getHeader("x-webhook-signature") ?? null;
-    case "hmac-sha1":
-      return getHeader("x-hub-signature") ?? null;
-    default:
-      return getHeader("x-webhook-signature") ?? getHeader("x-hub-signature-256") ?? null;
-  }
-}
-
-/**
- * Resolve the verification type for a source, preferring provider config.
- */
-export function resolveVerificationType(
-  provider: string | null,
-  verificationType: string | null,
-): string | null {
-  if (provider) {
-    const p = getProvider(provider);
-    if (p) {
-      const v = p.verification;
-      if ("type" in v) return v.type;
-      return v.algorithm;
-    }
-  }
-  return verificationType;
+  // Legacy source (no provider) — build minimal anonymous provider
+  const config = buildLegacyVerificationConfig(source.verification_type);
+  const anon = defineProvider({
+    id: "_legacy",
+    name: "Legacy",
+    verification: config,
+    events: {},
+  });
+  return createVerifier(anon, { secret: source.verification_secret });
 }
 
 /**
@@ -138,7 +121,16 @@ export function handleChallenge(
   return null;
 }
 
-function getVerificationHeader(v: VerificationConfig): string | null {
-  if ("header" in v) return v.header;
-  return null;
+function buildLegacyVerificationConfig(type: string | null) {
+  switch (type) {
+    case "stripe":
+      return { type: "stripe-signature" as const, header: "stripe-signature" };
+    case "slack":
+      return { type: "slack-signature" as const, header: "x-slack-signature" };
+    case "hmac-sha1":
+      return { header: "x-hub-signature", algorithm: "hmac-sha1" as const };
+    case "hmac-sha256":
+    default:
+      return { header: "x-hub-signature-256", algorithm: "hmac-sha256" as const };
+  }
 }

@@ -13,6 +13,7 @@ export const shopify = defineProvider({
   },
 
   parseEventType: (_body, headers) => headers?.["x-shopify-topic"] ?? "unknown",
+  parseEventId: (_body, headers) => headers?.["x-shopify-webhook-id"] ?? null,
 
   events: {
     "orders/create": { description: "New order placed", category: "orders" },
