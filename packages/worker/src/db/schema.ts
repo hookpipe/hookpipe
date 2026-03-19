@@ -78,6 +78,18 @@ export const apiKeys = sqliteTable("api_keys", {
   created_at: timestamp(),
 });
 
+// --- Consumers (agent event consumption) ---
+
+export const consumers = sqliteTable("consumers", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  source_id: text("source_id").references(() => sources.id, { onDelete: "set null" }),
+  event_types: text("event_types").notNull().default('["*"]'),
+  last_acked_at: text("last_acked_at"),
+  created_at: timestamp(),
+  updated_at: timestamp(),
+});
+
 // --- Deliveries ---
 
 export const deliveries = sqliteTable("deliveries", {

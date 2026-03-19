@@ -6,6 +6,7 @@ import {
   subscriptions,
   events,
   deliveries,
+  consumers,
 } from "./schema";
 
 export type DB = DrizzleD1Database;
@@ -246,6 +247,59 @@ export async function getFailedDeliveriesByDestination(
     .limit(limit)
     .offset(offset)
     .all();
+}
+
+// --- Consumers ---
+
+export async function getConsumer(db: DB, id: string) {
+  return db.select().from(consumers).where(eq(consumers.id, id)).get();
+}
+
+export async function getConsumerByName(db: DB, name: string) {
+  return db.select().from(consumers).where(eq(consumers.name, name)).get();
+}
+
+export async function listConsumers(db: DB) {
+  return db.select().from(consumers).orderBy(desc(consumers.created_at)).all();
+}
+
+export async function createConsumer(db: DB, consumer: typeof consumers.$inferInsert) {
+  await db.insert(consumers).values(consumer).run();
+}
+
+export async function updateConsumerCursor(db: DB, id: string, lastAckedAt: string) {
+  await db
+    .update(consumers)
+    .set({
+      last_acked_at: lastAckedAt,
+      updated_at: sql`strftime('%Y-%m-%dT%H:%M:%SZ', 'now')`,
+    })
+    .where(eq(consumers.id, id))
+    .run();
+}
+
+export async function deleteConsumer(db: DB, id: string) {
+  await db.delete(consumers).where(eq(consumers.id, id)).run();
+}
+
+export async function pollConsumerEvents(
+  db: DB,
+  opts: { lastAckedAt: string | null; sourceId: string | null; limit: number },
+) {
+  const conditions = [];
+  if (opts.lastAckedAt) {
+    conditions.push(sql`${events.received_at} > ${opts.lastAckedAt}`);
+  }
+  if (opts.sourceId) {
+    conditions.push(eq(events.source_id, opts.sourceId));
+  }
+
+  let query = db.select().from(events);
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions)) as typeof query;
+  }
+
+  return query.orderBy(asc(events.received_at)).limit(opts.limit).all();
 }
 
 export async function countFailedDeliveries(db: DB, destinationId: string) {
