@@ -3,6 +3,7 @@
 **Never miss a webhook.** Open-source webhook infrastructure with agent-native API.
 
 [![npm version](https://img.shields.io/npm/v/hookpipe)](https://www.npmjs.com/package/hookpipe)
+[![CI](https://github.com/hookpipe/hookpipe/actions/workflows/ci.yml/badge.svg)](https://github.com/hookpipe/hookpipe/actions/workflows/ci.yml)
 [![license](https://img.shields.io/npm/l/hookpipe)](https://github.com/hookpipe/hookpipe/blob/main/LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](https://github.com/hookpipe/hookpipe)
 
@@ -241,6 +242,17 @@ Custom verification schemes (e.g. HASH IV/KEY for Taiwan payment gateways) are s
 - [GitHub](https://github.com/hookpipe/hookpipe) — source code, architecture, benchmarks
 - [`@hookpipe/providers`](https://www.npmjs.com/package/@hookpipe/providers) — standalone webhook SDK with `createVerifier()`, `createHandler()`, and 530+ event types
 - [Agent Guide](https://github.com/hookpipe/hookpipe/blob/main/packages/cli/AGENTS.md) — error codes, ID formats, idempotency, workflow recipes
+
+## Get Started in 30 Seconds
+
+```bash
+npm i -g hookpipe
+hookpipe config set api_url https://your-hookpipe.workers.dev
+hookpipe init
+hookpipe connect stripe --secret whsec_xxx --to https://myapp.com/webhooks
+```
+
+[Deploy your own instance](https://github.com/hookpipe/hookpipe#quick-start) | [Agent Guide](https://github.com/hookpipe/hookpipe/blob/main/packages/cli/AGENTS.md) | [GitHub](https://github.com/hookpipe/hookpipe)
 
 ## License
 
