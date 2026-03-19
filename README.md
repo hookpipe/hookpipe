@@ -2,6 +2,8 @@
 
 **Never miss a webhook.** Free, open-source, deploys to Cloudflare in 30 seconds.
 
+> **Gateway** runs on Cloudflare Workers. **SDK** ([`@hookpipe/providers`](https://www.npmjs.com/package/@hookpipe/providers)) runs anywhere — Node.js, Deno, Bun, Lambda.
+
 [![CI](https://github.com/hookpipe/hookpipe/actions/workflows/ci.yml/badge.svg)](https://github.com/hookpipe/hookpipe/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/hookpipe)](https://www.npmjs.com/package/hookpipe)
 [![providers](https://img.shields.io/npm/v/@hookpipe/providers?label=providers)](https://www.npmjs.com/package/@hookpipe/providers)
@@ -141,6 +143,7 @@ hookpipe forwards the original payload to your URL with hookpipe headers added:
 
 ```typescript
 app.post('/webhooks', (req, res) => {
+  // hookpipe already verified the signature before forwarding
   const eventId = req.headers['x-hookpipe-event-id'];  // for deduplication
   const { type, data } = req.body;                      // original provider payload
   // Return 2xx to acknowledge. Non-2xx triggers retry.
