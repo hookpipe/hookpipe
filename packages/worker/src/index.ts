@@ -13,6 +13,7 @@ import { subscriptionsApi } from "./api/subscriptions";
 import { eventsApi } from "./api/events";
 import { keysApi } from "./api/keys";
 import { transferApi } from "./api/transfer";
+import { consumersApi } from "./api/consumers";
 import { createDb } from "./db/queries";
 import { listApiKeys } from "./auth/keys";
 
@@ -69,6 +70,7 @@ app.route("/api/v1/destinations", destinationsApi);
 app.route("/api/v1/subscriptions", subscriptionsApi);
 app.route("/api/v1/events", eventsApi);
 app.route("/api/v1/keys", keysApi);
+app.route("/api/v1/consumers", consumersApi);
 app.route("/api/v1", transferApi);
 
 // --- Worker export ---

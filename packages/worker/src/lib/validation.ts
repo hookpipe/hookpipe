@@ -70,6 +70,22 @@ export const createKeySchema = z.object({
   expires_at: z.string().datetime().optional(),
 });
 
+// --- Consumers ---
+
+export const createConsumerSchema = z.object({
+  name: z.string().min(1, "name is required").max(100),
+  source_id: z.string().optional(),
+  event_types: z.array(z.string()).default(["*"]),
+});
+
+export const ackConsumerSchema = z.object({
+  event_id: z.string().optional(),
+  through: z.string().optional(),
+}).refine(
+  (data) => data.event_id || data.through,
+  { message: "Provide either event_id or through timestamp" },
+);
+
 // --- Import ---
 
 // Import schema is lenient — accepts data from any hookpipe version
