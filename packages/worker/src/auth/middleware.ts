@@ -18,10 +18,10 @@ export function authMiddleware() {
   return async (c: Context<{ Bindings: Env }>, next: Next) => {
     const token = extractToken(c);
 
-    // Simple mode: env var token
+    // Simple mode: env var token (timing-safe comparison)
     const envToken = c.env.API_TOKEN;
     if (envToken) {
-      if (!token || token !== envToken) {
+      if (!token || !timingSafeEqual(token, envToken)) {
         return unauthorized(c);
       }
       await next();
@@ -61,6 +61,18 @@ function unauthorized(c: Context) {
     { error: { message: "Unauthorized", code: "UNAUTHORIZED" } },
     401,
   );
+}
+
+/**
+ * Timing-safe string comparison to prevent timing attacks on API tokens.
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
 }
 
 function setupRequired(c: Context) {
