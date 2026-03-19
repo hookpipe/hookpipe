@@ -2,6 +2,8 @@
 
 **Never miss a webhook.** Open-source webhook infrastructure with agent-native API.
 
+> **Two products, one ecosystem:** The gateway runs on Cloudflare Workers. The SDK ([`@hookpipe/providers`](#sdk--hookpipeproviders)) runs anywhere — Node.js, Deno, Bun, Lambda, Workers.
+
 [![npm version](https://img.shields.io/npm/v/hookpipe)](https://www.npmjs.com/package/hookpipe)
 [![CI](https://github.com/hookpipe/hookpipe/actions/workflows/ci.yml/badge.svg)](https://github.com/hookpipe/hookpipe/actions/workflows/ci.yml)
 [![license](https://img.shields.io/npm/l/hookpipe)](https://github.com/hookpipe/hookpipe/blob/main/LICENSE)
