@@ -10,6 +10,7 @@ import { devCommand } from "./commands/dev.js";
 import { tailCommand } from "./commands/tail.js";
 import { providersCommand } from "./commands/providers.js";
 import { connectCommand } from "./commands/connect.js";
+import { mcpCommand } from "./commands/mcp.js";
 import { HookpipeClient } from "./client.js";
 
 const program = new Command();
@@ -172,6 +173,7 @@ program.addCommand(connectCommand);
 program.addCommand(devCommand);
 program.addCommand(tailCommand);
 program.addCommand(providersCommand);
+program.addCommand(mcpCommand);
 
 // Global error handler
 program.exitOverride();
