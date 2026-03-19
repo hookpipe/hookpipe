@@ -9,6 +9,7 @@ interface TailEvent {
   // event fields
   source_id?: string;
   event_type?: string;
+  payload?: unknown;
   // delivery fields
   event_id?: string;
   destination_id?: string;
@@ -24,14 +25,16 @@ export const tailCommand = new Command("tail")
   .option("--interval <ms>", "Poll interval in milliseconds", "2000")
   .option("--limit <n>", "Stop after N events")
   .option("--timeout <dur>", "Stop after duration (e.g., 30s, 5m, 1h)")
+  .option("--payload", "Include full event payload in output")
   .option("--json", "NDJSON output (one JSON object per line)")
   .addHelpText("after", `
 Examples:
-  $ hookpipe tail                          # stream all events
-  $ hookpipe tail --source src_xxx         # filter by source
-  $ hookpipe tail --json | ./my-agent      # pipe to agent process
-  $ hookpipe tail --limit 10              # stop after 10 events
-  $ hookpipe tail --timeout 5m            # stop after 5 minutes`)
+  $ hookpipe tail                              # stream all events
+  $ hookpipe tail --source src_xxx             # filter by source
+  $ hookpipe tail --json | ./my-agent          # pipe to agent process
+  $ hookpipe tail --payload --json | jq .      # stream with full payloads
+  $ hookpipe tail --limit 10                   # stop after 10 events
+  $ hookpipe tail --timeout 5m                 # stop after 5 minutes`)
   .action(async (opts) => {
     const client = new HookpipeClient();
     const jsonMode = opts.json || isJsonMode();
@@ -70,7 +73,8 @@ Examples:
         const eventsRes = await client.listEvents({
           source_id: opts.source,
           after: lastEventTime,
-          limit: 50,
+          limit: opts.payload ? 10 : 50,
+          include_payload: opts.payload ?? false,
         });
         const events = (eventsRes.data ?? []) as Record<string, unknown>[];
 
@@ -85,13 +89,21 @@ Examples:
         const items: TailEvent[] = [];
 
         for (const e of events) {
-          items.push({
+          const item: TailEvent = {
             type: "event",
             id: e.id as string,
             at: e.received_at as string,
             source_id: e.source_id as string,
             event_type: (e.event_type as string) ?? "unknown",
-          });
+          };
+          if (opts.payload && e.payload !== undefined) {
+            try {
+              item.payload = typeof e.payload === "string" ? JSON.parse(e.payload as string) : e.payload;
+            } catch {
+              item.payload = e.payload;
+            }
+          }
+          items.push(item);
           lastEventTime = e.received_at as string;
           eventCount++;
         }
@@ -141,7 +153,12 @@ function formatLine(item: TailEvent): string {
   const time = item.at.split("T")[1]?.slice(0, 8) ?? "";
 
   if (item.type === "event") {
-    return `[${time}] ${item.id} ← ${item.source_id}  ${item.event_type}`;
+    let line = `[${time}] ${item.id} ← ${item.source_id}  ${item.event_type}`;
+    if (item.payload) {
+      const preview = JSON.stringify(item.payload);
+      line += `\n         ${preview.length > 200 ? preview.slice(0, 200) + "..." : preview}`;
+    }
+    return line;
   }
 
   const statusIcon = item.status === "success" ? "✓" : item.status === "dlq" ? "✗✗" : "✗";
