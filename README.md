@@ -19,12 +19,12 @@
 Webhooks are deceptively simple — until they aren't. Providers send them once and move on. If your server is down, slow, or returns an error, that event is gone. hookpipe sits between webhook sources and your application to make sure **nothing gets lost**.
 
 - **Built-in providers** — Stripe, GitHub, Slack, Shopify, Vercel out of the box. Each provider includes signature verification, typed event catalogs, and setup instructions. Community-extensible via [`defineProvider()`](packages/providers/DESIGN.md) — one file, four fields.
-- **Payload schemas** — Zod schemas for type-safe webhook payload validation. [`@hookpipe/providers`](https://www.npmjs.com/package/@hookpipe/providers) works standalone — use it in any TypeScript project, no hookpipe runtime needed.
+- **Payload schemas** — Zod schemas for type-safe webhook payload validation. [`@hookpipe/providers`](https://www.npmjs.com/package/@hookpipe/providers) ships `createVerifier()` and `createHandler()` — verify signatures and handle webhooks in any TypeScript project, no hookpipe runtime needed.
 - **Never miss a webhook** — Incoming payloads are immediately queued at the edge before your backend even processes them.
 - **Reliable delivery** — Automatic retries with exponential backoff, configurable per destination. Circuit breaker auto-pauses unhealthy destinations.
 - **Zero infrastructure** — No Docker, PostgreSQL, or Redis. Runs entirely on Cloudflare Workers.
 - **Free to start** — Runs on Cloudflare's free tier (~50K events/day). No VM costs, $0 idle.
-- **Agent-optimized** — CLI with `--json`, `--dry-run`, schema introspection, and provider discovery. AI agents operate hookpipe without reading docs.
+- **Agent-native** — Three integration paths: CLI subprocess (`--json`), event streaming (`hp listen`), and MCP server (`hp mcp`). AI agents operate hookpipe without reading docs.
 
 ## Status
 
@@ -46,7 +46,11 @@ Webhooks are deceptively simple — until they aren't. Providers send them once 
 | `hookpipe dev` (local tunnel + signature verification) | ✅ Implemented | Cloudflare Quick Tunnel, auto-downloads cloudflared |
 | `hookpipe connect` (one-shot setup) | ✅ Implemented | Source + destination + subscription in one command |
 | `hookpipe providers` (provider catalog) | ✅ Implemented | Browse providers and event types |
-| Pre-built providers (Stripe, GitHub, Slack, Shopify, Vercel) | ✅ Implemented | Event catalogs, verification, presets |
+| Pre-built providers (Stripe, GitHub, Slack, Shopify, Vercel) | ✅ Implemented | 530+ codegen event types, verification, presets |
+| `createVerifier()` / `createHandler()` | ✅ Implemented | Standalone webhook SDK, works in any runtime |
+| `hookpipe tail --payload` | ✅ Implemented | Stream events with full payloads (NDJSON) |
+| `hookpipe listen --consumer` | ✅ Implemented | Agent consumption with server-side cursor, auto-ack |
+| `hookpipe mcp` | ✅ Implemented | MCP server for LLM integration (stdio, 2 tools) |
 | `defineProvider()` (community providers) | ✅ Implemented | One file, four fields, publish to npm or GitHub |
 | SSRF protection on destination URLs | ✅ Implemented | Blocks private IPs, localhost, non-HTTPS |
 | Payload size limit (256KB) | ✅ Implemented | Returns 413 on oversized webhooks |
@@ -131,23 +135,17 @@ hookpipe connect stripe \
 
 One command creates source, destination, and subscription. Paste the Webhook URL into your provider's dashboard.
 
-### Monitor
+### Monitor & Consume
 
 ```bash
 # Stream events in real-time (like tail -f)
-hookpipe tail
+hookpipe tail --payload
 
-# Filter by source
-hookpipe tail --source src_abc123
-
-# Pipe to an agent or script
-hookpipe tail --json | ./my-agent
+# Agent consumption pipeline — resumable, auto-ack, backpressure
+hookpipe listen --consumer my-bot --source src_abc123 | python agent.py
 
 # List recent events
 hookpipe events ls --json --limit 10
-
-# Check circuit breaker status
-hookpipe dest get dst_def456 --json
 ```
 
 ## Architecture
@@ -184,28 +182,30 @@ Providers are **knowledge-only modules** — they describe *what* to verify and 
 [`@hookpipe/providers`](https://www.npmjs.com/package/@hookpipe/providers) is published as a standalone npm package. Use it with the full hookpipe stack, or independently in any TypeScript project:
 
 ```typescript
-import { stripe } from '@hookpipe/providers';
+import { stripe, createVerifier, createHandler } from '@hookpipe/providers';
 
-// Get verification config
-stripe.verification;  // → { type: 'stripe-signature', header: 'stripe-signature' }
+// Verify signatures — one API for every provider
+const verify = createVerifier(stripe, { secret: 'whsec_xxx' });
+const isValid = await verify(rawBody, headers);
 
-// Parse event type from payload
-stripe.parseEventType(body);  // → 'payment_intent.succeeded'
+// Full webhook handler (verify + parse + challenge)
+const webhook = createHandler(stripe, { secret: 'whsec_xxx' });
+const result = await webhook.handle(body, headers);
+// result.verified, result.eventType, result.eventId, result.payload
 
-// Validate payload with Zod schema
-const event = stripe.events['payment_intent.succeeded'];
-if (typeof event !== 'string' && event.schema) {
-  const result = event.schema.safeParse(body);
-}
+// Browse 530+ event types
+Object.keys(stripe.events).length;  // 260 — generated from stripe@20.4.1 SDK types
 ```
 
 | Provider | Events | Verification | Schema | Challenge |
 |----------|--------|-------------|--------|-----------|
-| Stripe   | 22     | stripe-signature | 3 events | — |
-| GitHub   | 18     | hmac-sha256 | 2 events | — |
+| Stripe   | 260    | stripe-signature | 3 events | — |
+| GitHub   | 277    | hmac-sha256 | 2 events | — |
 | Slack    | 10     | slack-signature | — | ✓ |
 | Shopify  | 17     | hmac-sha256 (base64) | — | — |
 | Vercel   | 9      | hmac-sha1 | — | — |
+
+Stripe and GitHub event catalogs are auto-generated from official SDK types (`stripe@20.4.1`, `@octokit/webhooks-types@7.6.1`). Custom verification schemes (e.g. HASH IV/KEY for Taiwan payment gateways) are supported via the `custom` verification type.
 
 Schemas are progressive — added per event as the project matures. Providers also support encrypted payloads (JWS, AES) via the `decode` capability, enabling integration with services beyond simple HMAC signing. See the [Provider Design Guide](packages/providers/DESIGN.md) for the full specification.
 
@@ -336,30 +336,30 @@ hookpipe providers ls                      # list all providers
 hookpipe providers describe stripe --json  # events, presets, verification
 ```
 
-### Agent-Friendly Features
+### Agent Integration
 
-The CLI is designed as an **agent-first** interface — AI agents can operate hookpipe without reading documentation:
+The CLI is designed as an **agent-first** interface with three integration paths:
 
-| Feature | Flag/Command | Purpose |
+| Path | Command | Use case |
 |---|---|---|
-| One-shot setup | `hookpipe connect` | Source + destination + subscription in one command |
-| Provider catalog | `hookpipe providers ls/describe` | Browse events and verification at runtime |
-| Structured output | `--json` | Machine-parseable JSON on all commands |
-| Raw JSON input | `-d / --data` | Send full API payload, skip flag mapping |
-| Schema introspection | `hookpipe schema` | Discover API resources and fields |
-| Dry run | `--dry-run` | Validate mutations without executing |
-| Field selection | `--fields` | Limit output columns, save context tokens |
-| Export/Import | `hookpipe export/import` | Pipe-friendly config transfer |
-| Migrate | `hookpipe migrate` | One-command instance-to-instance migration |
+| **Event streaming** | `hp listen --consumer my-bot \| agent.py` | Reliable event consumption with server-side cursor |
+| **MCP server** | `hp mcp` | LLM directly operates hookpipe via JSON-RPC |
+| **CLI subprocess** | `hp connect --json` | Discover → validate → execute pattern |
 
 ```bash
-# Agent workflow: discover → validate → execute
-hookpipe providers describe stripe --json                                       # discover events
-hookpipe connect stripe --secret whsec_xxx --to https://... --dry-run           # validate
-hookpipe connect stripe --secret whsec_xxx --to https://... --events "payment_intent.*"  # execute
+# Stream events to an agent (resumable after restart)
+hp listen --consumer my-bot --source src_stripe | python agent.py
+
+# MCP for Claude Desktop / Cursor / Windsurf
+# Add to config: {"mcpServers":{"hookpipe":{"command":"hookpipe","args":["mcp"]}}}
+
+# CLI subprocess: discover → validate → execute
+hp providers describe stripe --json
+hp connect stripe --secret whsec_xxx --to https://... --dry-run
+hp connect stripe --secret whsec_xxx --to https://... --json
 ```
 
-See [`packages/cli/AGENTS.md`](packages/cli/AGENTS.md) for the full agent guide.
+All commands support `--json`, `--dry-run`, `-d/--data`, `--fields`, `hookpipe schema`. See [`packages/cli/AGENTS.md`](packages/cli/AGENTS.md) for the full agent guide.
 
 ## API Reference
 
@@ -438,9 +438,15 @@ Webhook ingestion, queue-based delivery, configurable retry strategies, circuit 
 - `@hookpipe/providers` published to npm as standalone package
 - Community-extensible via `defineProvider()` — one file, four fields, publish to npm or GitHub
 
-### v0.3 — Observability (current)
+### v0.3 — Agent & Observability (current)
 
-DLQ notifications via webhook callback (✅ done), structured JSON logging, delivery metrics, Cloudflare Logpush integration.
+- `hp listen` — agent consumption with server-side cursor, auto-ack, backpressure (✅ done)
+- `hp mcp` — MCP server for LLM integration (✅ done)
+- `hp tail --payload` — stream events with full payloads (✅ done)
+- `createVerifier()` / `createHandler()` — standalone webhook SDK (✅ done)
+- 530+ codegen event types from Stripe/GitHub official SDKs (✅ done)
+- DLQ notifications via webhook callback (✅ done)
+- Structured JSON logging, delivery metrics, Cloudflare Logpush integration (planned)
 
 ### v0.4 — Dashboard
 
